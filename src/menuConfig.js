@@ -40,24 +40,19 @@ const asideMenuConfig = [
         path: '/Configure',
         authority: 'admin',
       },
-      {
-        name: '账户管理',
-        path: '/AccountManager',
-        authority: 'admin',
-      },
     ],
   },
   {
-    name: '节点测试',
+    name: '账户管理',
     path: '/table',
     icon: 'table',
     // authority: 'admin',
     children: [
-      {
-        name: '基础测试',
-        path: '/table/basic-table',
-        authority: 'admin',
-      },
+        {
+            name: '账户操作',
+            path: '/AccountManager',
+            authority: 'admin',
+          },
     ],
   },
   {

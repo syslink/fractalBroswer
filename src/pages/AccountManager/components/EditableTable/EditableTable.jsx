@@ -131,7 +131,7 @@ export default class EditableTable extends Component {
             <Table.Column title="操作" width={80} cell={this.renderOperation} />
           </Table>
           <div onClick={this.addNewItem} style={styles.addNewItem}>
-            + 新增一行
+            + 新增账户
           </div>
         </IceContainer>
         <Dialog
