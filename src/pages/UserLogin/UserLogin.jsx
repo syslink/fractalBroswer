@@ -132,6 +132,7 @@ const mapDispatchToProps = {
   userLogin,
 };
 
+// 参数state就是redux提供的全局store，而loginResult会成为本组件的this.props的其中一个成员
 const mapStateToProps = (state) => {
   return { loginResult: state.login };
 };

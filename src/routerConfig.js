@@ -25,6 +25,7 @@ import TableDisplay from './pages/TableDisplay';
 
 import Performance from './pages/Performance';
 import AccountManager from './pages/AccountManager';
+import KeystoreManager from './pages/KeystoreManager';
 import ContractManager from './pages/ContractManager'
 
 import Configure from './pages/Configure';
@@ -130,6 +131,11 @@ const routerConfig = [
     path: '/AccountManager',
     layout: BasicLayout,
     component: AccountManager,
+  },
+  {
+    path: '/KeystoreManager',
+    layout: BasicLayout,
+    component: KeystoreManager,
   },
   {
     path: '/Block',

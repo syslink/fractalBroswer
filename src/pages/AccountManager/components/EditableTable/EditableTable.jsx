@@ -9,8 +9,8 @@ import { Input, Dialog } from '@icedesign/base';
 const generatorData = () => {
   return Array.from({ length: 5 }).map((item, index) => {
     return {
-      userName: 'Sam',
-      privateKey: '0x223222233',
+      account: 'Sam',
+      email: 'test@138.com',
       publicKey: '0x223222233',
     };
   });
@@ -30,8 +30,8 @@ export default class EditableTable extends Component {
       dataSource: generatorData(),
       visible: false,
       publicKey: '',
-      privateKey: '',
-      userName: ''
+      email: '',
+      account: ''
     };
   }
 
@@ -100,11 +100,11 @@ export default class EditableTable extends Component {
   handlePublicChange(v, e) {
     this.state.publicKey = v;
   }
-  handlePrivateChange(v, e) {
-    this.state.privateKey = v;
+  handleEmailChange(v, e) {
+    this.state.email = v;
   }
   handleUserNameChange(v, e) {
-    this.state.userName = v;
+    this.state.account = v;
   }
 
   render() {
@@ -115,18 +115,18 @@ export default class EditableTable extends Component {
             <Table.Column width={80} title="ID" cell={this.renderOrder} />
             <Table.Column
               width={280}
-              title="用户名"
-              cell={this.renderEditor.bind(this, 'userName')}
-            />
-            <Table.Column
-              width={240}
-              title="私钥"
-              cell={this.renderEditor.bind(this, 'privateKey')}
+              title="账号"
+              dataIndex='account'
             />
             <Table.Column
               width={180}
               title="公钥"
-              cell={this.renderEditor.bind(this, 'publicKey')}
+              dataIndex='publicKey'
+            />
+            <Table.Column
+              width={240}
+              title="邮箱"
+              cell={this.renderEditor.bind(this, 'email')}
             />
             <Table.Column title="操作" width={80} cell={this.renderOperation} />
           </Table>
@@ -154,23 +154,23 @@ export default class EditableTable extends Component {
           <br />
           <br />
           <Input hasClear
-            onChange={this.handlePrivateChange.bind(this)} 
-            style={{ width: 400 }}
-            addonBefore="私钥"
-            size="medium"
-            defaultValue=""
-            maxLength={34}
-            hasLimitHint
-          />
-          <br />
-          <br />
-          <Input hasClear
             onChange={this.handlePublicChange.bind(this)} 
             style={{ width: 400 }}
             addonBefore="公钥"
             size="medium"
             defaultValue=""
             maxLength={22}
+            hasLimitHint
+          />
+          <br />
+          <br />
+          <Input hasClear
+            onChange={this.handleEmailChange.bind(this)} 
+            style={{ width: 400 }}
+            addonBefore="邮箱"
+            size="medium"
+            defaultValue=""
+            maxLength={34}
             hasLimitHint
           />
 

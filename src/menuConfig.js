@@ -31,12 +31,12 @@ const asideMenuConfig = [
     icon: 'chart1',
     children: [
       {
-        name: '性能监控',
+        name: '钱包节点',
         path: '/page17',
         authority: 'admin',
       },
       {
-        name: '配置管理',
+        name: '链上节点',
         path: '/Configure',
         authority: 'admin',
       },
@@ -48,11 +48,16 @@ const asideMenuConfig = [
     icon: 'table',
     // authority: 'admin',
     children: [
-        {
-            name: '账户操作',
-            path: '/AccountManager',
-            authority: 'admin',
-          },
+      {
+        name: '公私钥管理',
+        path: '/KeystoreManager',
+        authority: 'admin',
+      },
+      {
+        name: '账户操作',
+        path: '/AccountManager',
+        authority: 'admin',
+      },
     ],
   },
   {
@@ -67,14 +72,6 @@ const asideMenuConfig = [
       {
         name: '查看交易',
         path: '/Transaction',
-      },
-      {
-        name: '查看挂起中的交易',
-        path: '/list/card-list',
-      },
-      {
-        name: '查看合约内部交易',
-        path: '/list/card-list1',
       },
     ],
   },
