@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 import IceContainer from '@icedesign/container';
-import { Table, Button } from '@icedesign/base';
+import { Table, Button, Select } from '@icedesign/base';
 import CellEditor from './CellEditor';
 import './EditableTable.scss';
 import { Input, Dialog } from '@icedesign/base';
@@ -27,12 +27,47 @@ export default class EditableTable extends Component {
     super(props);
 
     this.state = {
-      dataSource: generatorData(),
+      dataSource: [],
       visible: false,
       publicKey: '',
       email: '',
-      account: ''
+      account: '',
+      accounts: ["systemio"],
+      addresses: [],
+      successCallback: () => {},
+      errCallback: (error) => {},
     };
+  }
+
+  componentDidMount() {
+    var dataToSrv = JSON.stringify({"jsonrpc": "2.0", 
+                                    "method": this.state.method, 
+                                    "params": [],
+                                    "id": 1});
+    const options = {
+      method: 'POST',
+      data: dataToSrv,
+      url: this.state.localNodeUrl,
+    };
+    var _this = this;
+    axios(options).then(function (response) {
+          if (response.data.hasOwnProperty("result")) {
+            for( let keyValue of response.data.result){
+              _this.state.addresses.push(keyValue.address);
+            }
+            _this.setState({
+              addresses: this.state.addresses
+            });
+          } else if (response.data.hasOwnProperty("error")) {
+            _this.setState({
+              msgVisible: true,
+              msgContent: "无法在本地获取公私信息",
+            });
+          }
+        })
+        .catch(function (error) {
+          _this.state.errCallback(error); 
+        });
   }
 
   renderOrder = (value, index) => {
@@ -114,19 +149,14 @@ export default class EditableTable extends Component {
           <Table dataSource={this.state.dataSource} hasBorder={false}>
             <Table.Column width={80} title="ID" cell={this.renderOrder} />
             <Table.Column
-              width={280}
+              width={200}
               title="账号"
               dataIndex='account'
             />
             <Table.Column
-              width={180}
-              title="公钥"
-              dataIndex='publicKey'
-            />
-            <Table.Column
-              width={240}
-              title="邮箱"
-              cell={this.renderEditor.bind(this, 'email')}
+              width={200}
+              title="绑定的公钥"
+              dataIndex='address'
             />
             <Table.Column title="操作" width={80} cell={this.renderOperation} />
           </Table>
@@ -142,6 +172,12 @@ export default class EditableTable extends Component {
           title="请输入账户信息"
           footerAlign='center'
         >
+          <Select
+            placeholder="选择创建账户"
+            onChange={this.onSelect.bind(this, "creatorAccount")}
+            dataSource={this.state.accounts}
+          ></Select>
+
           <Input hasClear
             onChange={this.handleUserNameChange.bind(this)} 
             style={{ width: 400 }}
@@ -173,8 +209,19 @@ export default class EditableTable extends Component {
             maxLength={34}
             hasLimitHint
           />
-
         </Dialog>
+        <Dialog
+          visible={this.state.msgVisible}
+          title="通知"
+          footerActions='ok'
+          footerAlign='center'
+          closeable='true'
+          onOk={this.onMsgClose}
+          onCancel={this.onMsgClose}
+          onClose={this.onMsgClose}
+        >
+          {this.state.msgContent}
+        </Dialog>  
       </div>
     );
   }
