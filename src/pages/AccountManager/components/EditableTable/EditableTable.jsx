@@ -28,7 +28,7 @@ export default class EditableTable extends Component {
     this.state = {
       dataSource: generatorData(),
       visible: false,
-      publicKey: '',
+      address: '',
       email: '',
       account: ''
     };

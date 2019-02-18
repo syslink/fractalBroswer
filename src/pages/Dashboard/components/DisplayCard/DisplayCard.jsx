@@ -4,6 +4,11 @@ import IceContainer from '@icedesign/container';
 import { Balloon, Grid } from '@icedesign/base';
 import './DisplayCard.scss';
 import DataBinder from '@icedesign/data-binder';
+import { getLatestBlock, getTransactionsNum } from './actions';
+import reducer from './reducer';
+
+import { connect } from 'react-redux';
+import { compose } from 'redux';
 
 const { Row, Col } = Grid;
 
@@ -16,7 +21,10 @@ export default class extends Component {
 
   constructor(props) {
     super(props);
-    this.state = {};
+    this.state = {
+      localNodeUrl: 'http://127.0.0.1:8545',
+      lastBlockInfo: {},
+    };
   }
 
   render() {
@@ -59,7 +67,7 @@ export default class extends Component {
               </span>
             </div>
             <div className="count" style={styles.count}>
-              46,657
+              {this.state.lastBlockNum}
               <span style={styles.extraIcon}>
                 <Balloon
                   trigger={
@@ -242,3 +250,26 @@ const styles = {
     top: '1px',
   },
 };
+
+
+const mapDispatchToProps = {
+  getLatestBlock,
+  getTransactionsNum
+};
+
+// 参数state就是redux提供的全局store，而loginResult会成为本组件的this.props的其中一个成员
+const mapStateToProps = (state) => {
+  return { lastBlockInfo: state.lastBlockInfo };
+};
+
+const withConnect = connect(
+  mapStateToProps,
+  mapDispatchToProps
+);
+
+const withReducer = injectReducer({ key: 'blockTxLayout', reducer });
+
+export default compose(
+  withReducer,
+  withConnect
+)(BlockTxLayout);

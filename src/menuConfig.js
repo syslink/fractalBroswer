@@ -4,15 +4,15 @@
 
 const headerMenuConfig = [
   {
-    name: '反馈',
-    path: 'https://github.com/alibaba/ice',
+    name: 'feedback',
+    path: '',
     external: true,
     newWindow: true,
     icon: 'message',
   },
   {
-    name: '帮助',
-    path: 'https://alibaba.github.io/ice',
+    name: 'help',
+    path: '',
     external: true,
     newWindow: true,
     icon: 'bangzhu',
@@ -26,81 +26,81 @@ const asideMenuConfig = [
     icon: 'home2',
   },
   {
-    name: '节点管理',
+    name: 'Nodes Info',
     path: '/chart',
     icon: 'chart1',
     children: [
       {
-        name: '钱包节点',
+        name: 'Wallet Node',
         path: '/page17',
         authority: 'admin',
       },
       {
-        name: '链上节点',
+        name: 'Producer Nodes',
         path: '/Configure',
         authority: 'admin',
       },
     ],
   },
   {
-    name: '账户管理',
+    name: 'Account Manager',
     path: '/table',
     icon: 'table',
     // authority: 'admin',
     children: [
       {
-        name: '公私钥管理',
+        name: 'Keystore',
         path: '/KeystoreManager',
         authority: 'admin',
       },
       {
-        name: '账户操作',
+        name: 'Account',
         path: '/AccountManager',
         authority: 'admin',
       },
     ],
   },
   {
-    name: '区块&交易',
+    name: 'Block & Transaction',
     path: '/list',
     icon: 'ul-list',
     children: [
       {
-        name: '查看区块',
+        name: 'Block',
         path: '/Block',
       },
       {
-        name: '查看交易',
+        name: 'Transaction',
         path: '/Transaction',
       },
     ],
   },
   {
-    name: '资产管理',
+    name: 'Asset Manager',
     path: '/portlets',
     icon: 'publish',
     children: [
       {
-        name: '资产查询',
+        name: 'Asser Search',
         path: '/assetSearch',
       },
       {
-        name: '资产操作',
+        name: 'Asset Operator',
         path: '/assetOperator',
       },
     ],
   },
   {
-    name: '合约管理',
+    name: 'Contract Manager',
     path: '/result',
     icon: 'result',
     children: [
       {
-        name: '编写合约',
+        name: 'Contract Editor',
         path: '/contractManager',
       },
       {
-        name: '查看合约',
+        name: 'Contract Viewer',
         path: '/result/fail',
       },
     ],

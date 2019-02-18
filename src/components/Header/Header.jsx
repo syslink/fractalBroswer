@@ -29,7 +29,7 @@ export default class Header extends PureComponent {
             style={{ fontSize: '12px' }}
             size="large"
             inputWidth={400}
-            searchText="搜索"
+            searchText="Search"
             placeholder="Search by Address / Txhash / Block / Token / Ens"
           />
           {/* Header 菜单项 begin */}
@@ -71,7 +71,8 @@ export default class Header extends PureComponent {
 
           {/* Header 右侧内容块 */}
 
-          <Balloon
+          {/* <Balloon
+            visible={false}
             trigger={
               <div
                 className="ice-design-header-userpannel"
@@ -126,7 +127,7 @@ export default class Header extends PureComponent {
                 <FoundationSymbol type="compass" size="small" />退出
               </li>
             </ul>
-          </Balloon>
+          </Balloon> */}
         </div>
       </Layout.Header>
     );
