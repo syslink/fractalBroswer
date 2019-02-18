@@ -10,8 +10,7 @@ const generatorData = () => {
   return Array.from({ length: 5 }).map((item, index) => {
     return {
       account: 'Sam',
-      email: 'test@138.com',
-      publicKey: '0x223222233',
+      address: '0x223222233',
     };
   });
 };
