@@ -11,7 +11,7 @@ import BasicLayout from './layouts/BasicLayout';
 const router = () => {
   return (
     <Switch>
-      <Route path="/user" component={UserLayout} />
+      {/* <Route path="/user" component={UserLayout} /> */}
       <Route path="/" component={BasicLayout} />
     </Switch>
   );

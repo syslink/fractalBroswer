@@ -10,8 +10,7 @@ const generatorData = () => {
   return Array.from({ length: 5 }).map((item, index) => {
     return {
       account: 'Sam',
-      email: 'test@138.com',
-      publicKey: '0x223222233',
+      address: '0x223222233',
     };
   });
 };
@@ -29,7 +28,7 @@ export default class EditableTable extends Component {
     this.state = {
       dataSource: [],
       visible: false,
-      publicKey: '',
+      address: '',
       email: '',
       account: '',
       accounts: ["systemio"],

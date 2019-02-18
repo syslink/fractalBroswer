@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 import IceContainer from '@icedesign/container';
-import { Table, Button, Input, Dialog } from '@icedesign/base';
+import { Table, Button, Input, Dialog, Feedback } from '@icedesign/base';
 import CellEditor from './CellEditor';
 import './EditableTable.scss';
 import axios from 'axios';
@@ -62,10 +62,7 @@ export default class EditableTable extends Component {
               dataSource: this.state.dataSource
             });
           } else if (response.data.hasOwnProperty("error")) {
-            _this.setState({
-              msgVisible: true,
-              msgContent: "无法获取公私钥对",
-            });
+            Feedback.toast.error('无法获取公私钥对');
           }
         })
         .catch(function (error) {
@@ -96,10 +93,10 @@ export default class EditableTable extends Component {
       extraParam: [this.state.dataSource[index].address],
       successCallback: (response) => {
         _this.setState({
-          msgVisible: true,
-          msgContent: "密码修改成功",
           newPwdDialogVisible: false,
         });
+
+        Feedback.toast.success('密码修改成功');
       },
     });
   };
@@ -215,16 +212,10 @@ export default class EditableTable extends Component {
           } else if (response.data.hasOwnProperty("error")) {
             var msg = response.data.error.message;
             if (msg.indexOf("Address") != -1) {
-              //_this.errMsg("地址错误");
-              _this.setState({
-                msgVisible: true,
-                msgContent: "地址错误",
-              });
+              Feedback.toast.error('地址错误');
             } else if (msg.indexOf("passphrase")) {
-              _this.setState({
-                msgVisible: true,
-                msgContent: "密码不匹配",
-              });
+
+              Feedback.toast.error('密码不匹配');
             }
           }
           _this.setState({
@@ -264,10 +255,7 @@ export default class EditableTable extends Component {
           if (response.data.hasOwnProperty("result")) {
             _this.state.successCallback(response);
           } else if (response.data.hasOwnProperty("error")) {
-            _this.setState({
-              msgVisible: true,
-              msgContent: "修改密码失败",
-            });
+            Feedback.toast.error('修改密码失败');
           }
           _this.setState({
             newPwdDialogVisible: false
@@ -299,10 +287,7 @@ export default class EditableTable extends Component {
           if (response.data.hasOwnProperty("result")) {
             _this.state.successCallback(response);
           } else if (response.data.hasOwnProperty("error")) {
-            _this.setState({
-              msgVisible: true,
-              msgContent: "导入私钥失败",
-            });
+            Feedback.toast.error('导入私钥失败');
           }
           _this.setState({
             importKeyDialogVisible: false
