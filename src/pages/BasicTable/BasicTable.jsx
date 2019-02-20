@@ -15,7 +15,7 @@ export default class BasicTable extends Component {
     return (
       <div>
         <a
-          href="http://127.0.0.1:8080/"
+          href=""
           target="_blank"
           rel="noopener noreferrer"
         >

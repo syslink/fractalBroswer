@@ -6,7 +6,6 @@ export async function getLatestBlockReq(params) {
                                     "params": params,
                                     "id": 1});
   return axios({
-    url: 'http://127.0.0.1:8545',
     method: 'post',
     data: dataToSrv,
   });
@@ -18,7 +17,6 @@ export async function getTransactionsNumReq(params) {
                                     "params": params,
                                     "id": 1});
   return axios({
-    url: 'http://127.0.0.1:8545',
     method: 'post',
     data: dataToSrv,
   });

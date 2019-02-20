@@ -3,8 +3,17 @@ import IceContainer from '@icedesign/container';
 import { Table, Button, Select } from '@icedesign/base';
 import CellEditor from './CellEditor';
 import './EditableTable.scss';
-import { Input, Dialog } from '@icedesign/base';
+import { Input, Dialog, Feedback } from '@icedesign/base';
 
+import injectReducer from '../../../../utils/injectReducer';
+import { bindAccountAddr, deleteBoundInfo, updateBoundInfo, 
+         getBoundInfo, getKeystore, createAccountBySystem, getAccountInfo } from '../../actions';
+import reducer from '../../reducer';
+
+import { connect } from 'react-redux';
+import { compose } from 'redux';
+
+const {AutoComplete} = Select;
 
 const generatorData = () => {
   return Array.from({ length: 5 }).map((item, index) => {
@@ -15,7 +24,7 @@ const generatorData = () => {
   });
 };
 
-export default class EditableTable extends Component {
+class EditableTable extends Component {
   static displayName = 'EditableTable';
 
   static propTypes = {};
@@ -24,14 +33,19 @@ export default class EditableTable extends Component {
 
   constructor(props) {
     super(props);
-
     this.state = {
       dataSource: [],
       visible: false,
-      address: '',
-      email: '',
+      creator: '',
       account: '',
-      accounts: ["systemio"],
+      accountReg: new RegExp("^[a-z0-9]{8,16}$"),
+      publicKey: '',
+      email: '',
+      emailReg: new RegExp("^[a-z0-9]+([._\\-]*[a-z0-9])*@([a-z0-9]+[-a-z0-9]*[a-z0-9]+.){1,63}[a-z0-9]+$"),
+      systemAccount: "ftsystemio",
+      emailDisable: false,
+      password: '',
+      passwordDisable: false,
       addresses: [],
       successCallback: () => {},
       errCallback: (error) => {},
@@ -39,34 +53,7 @@ export default class EditableTable extends Component {
   }
 
   componentDidMount() {
-    var dataToSrv = JSON.stringify({"jsonrpc": "2.0", 
-                                    "method": this.state.method, 
-                                    "params": [],
-                                    "id": 1});
-    const options = {
-      method: 'POST',
-      data: dataToSrv,
-      url: this.state.localNodeUrl,
-    };
-    var _this = this;
-    axios(options).then(function (response) {
-          if (response.data.hasOwnProperty("result")) {
-            for( let keyValue of response.data.result){
-              _this.state.addresses.push(keyValue.address);
-            }
-            _this.setState({
-              addresses: this.state.addresses
-            });
-          } else if (response.data.hasOwnProperty("error")) {
-            _this.setState({
-              msgVisible: true,
-              msgContent: "无法在本地获取公私信息",
-            });
-          }
-        })
-        .catch(function (error) {
-          _this.state.errCallback(error); 
-        });
+    this.props.getKeystore([]);
   }
 
   renderOrder = (value, index) => {
@@ -107,22 +94,38 @@ export default class EditableTable extends Component {
   };
 
   addNewItem = () => {
+
+    for( let keyValue of this.props.keystoreInfo){
+      this.props.getBoundInfo([keyValue.address]);
+    }
+
     this.setState({
       visible: true
     });
   }
 
   onOK = () => {
-    this.state.dataSource.push({
-      publicKey: this.state.publicKey,
-      privateKey: this.state.privateKey,
-      userName: this.state.userName,
-    });
+    if (this.state.creator == '') {
+      Feedback.toast.error("请选择创建者账号");
+      return;
+    }
+    if (!this.state.accountReg.test(this.state.account)) {
+      Feedback.toast.error("账号格式错误");
+      return;
+    }
+    if (this.state.publicKey == '') {
+      Feedback.toast.error("请选择公钥");
+      return;
+    }
+    if (!this.state.emailReg.test(this.state.email)) {
+      Feedback.toast.error("邮箱格式错误");
+      return;
+    }
+    if (this.state.creator == this.state.systemAccount) {
+      this.props.createAccountBySystem({account:this.state.account, publicKey:this.state.publicKey, email:this.state.email});
+    } else {
 
-    this.setState({
-      dataSource: this.state.dataSource,
-      visible: false
-    });
+    }
   };
 
   onClose = () => {
@@ -130,22 +133,41 @@ export default class EditableTable extends Component {
       visible: false
     });
   };
+  handlePasswordChange(v, e) {
+    this.state.password = v;
+  }
 
-  handlePublicChange(v, e) {
+  handlePublicKeyChange(v, e) {
     this.state.publicKey = v;
   }
   handleEmailChange(v, e) {
     this.state.email = v;
   }
-  handleUserNameChange(v, e) {
+  handleAccountNameChange(v, e) {
     this.state.account = v;
+  }
+
+  onChangeCreatorAccount(value) {
+    if (value == this.state.systemAccount) {
+      this.setState({
+        emailDisable: false,
+        passwordDisable: true,
+        creator: value,
+      });
+    } else {
+      this.setState({
+        emailDisable: true,
+        passwordDisable: false,
+        creator: value,
+      });
+    }
   }
 
   render() {
     return (
       <div className="editable-table">
         <IceContainer>
-          <Table dataSource={this.state.dataSource} hasBorder={false}>
+          <Table dataSource={this.state.dataSource} hasBorder={false} isLoading={this.props.isLoading}>
             <Table.Column width={80} title="ID" cell={this.renderOrder} />
             <Table.Column
               width={200}
@@ -155,11 +177,11 @@ export default class EditableTable extends Component {
             <Table.Column
               width={200}
               title="绑定的公钥"
-              dataIndex='address'
+              dataIndex='publicKey'
             />
             <Table.Column title="操作" width={80} cell={this.renderOperation} />
           </Table>
-          <div onClick={this.addNewItem} style={styles.addNewItem}>
+          <div onClick={this.addNewItem.bind(this)} style={styles.addNewItem}>
             + 新增账户
           </div>
         </IceContainer>
@@ -168,44 +190,69 @@ export default class EditableTable extends Component {
           onOk={this.onOK}
           onCancel={this.onClose}
           onClose={this.onClose}
-          title="请输入账户信息"
+          title="账户创建"
           footerAlign='center'
         >
+          
           <Select
-            placeholder="选择创建账户"
-            onChange={this.onSelect.bind(this, "creatorAccount")}
-            dataSource={this.state.accounts}
+            style={{width: 400}}
+            placeholder="选择创建者账户"
+            onChange={this.onChangeCreatorAccount.bind(this)}
+            dataSource={this.props.accounts}
+            label='创建者账号：'
           ></Select>
-
+          <br />
+          <br />
           <Input hasClear
-            onChange={this.handleUserNameChange.bind(this)} 
+            onChange={this.handleAccountNameChange.bind(this)} 
             style={{ width: 400 }}
-            addonBefore="用户名"
+            addonBefore="账号"
             size="medium"
             defaultValue=""
-            maxLength={10}
+            maxLength={16}
             hasLimitHint
+            placeholder="由a-z0-9组成，长度8~16位"
           />
           <br />
           <br />
-          <Input hasClear
-            onChange={this.handlePublicChange.bind(this)} 
-            style={{ width: 400 }}
-            addonBefore="公钥"
-            size="medium"
-            defaultValue=""
-            maxLength={22}
-            hasLimitHint
-          />
+          <Select
+            style={{width: 400}}
+            placeholder="选择公钥，此公钥将同账号绑定，后期也可更换"
+            onChange={this.handlePublicKeyChange.bind(this)}
+            label={`公钥：`}
+          >
+          {
+            this.props.keystoreInfo.map((keystore) => (
+              <Select.Option value={keystore.publicKey} lable={keystore.publicKey}>
+                {keystore.publicKey}
+              </Select.Option>
+            ))
+          }
+          
+          </Select>
           <br />
           <br />
           <Input hasClear
-            onChange={this.handleEmailChange.bind(this)} 
+            onChange={this.handleEmailChange.bind(this)}
+            disabled={this.state.emailDisable}
             style={{ width: 400 }}
             addonBefore="邮箱"
             size="medium"
             defaultValue=""
             maxLength={34}
+            hasLimitHint
+          />
+          <br />
+          <br />
+          <Input hasClear
+            htmlType="password"
+            onChange={this.handlePasswordChange.bind(this)} 
+            disabled={this.state.passwordDisable}
+            style={{ width: 400 }}
+            addonBefore="密码"
+            size="medium"
+            defaultValue=""
+            maxLength={20}
             hasLimitHint
           />
         </Dialog>
@@ -236,3 +283,36 @@ const styles = {
     textAlign: 'center',
   },
 };
+
+const mapDispatchToProps = {
+  bindAccountAddr, 
+  deleteBoundInfo, 
+  updateBoundInfo, 
+  getBoundInfo, 
+  getKeystore, 
+  createAccountBySystem, 
+  getAccountInfo
+};
+
+// 参数state就是redux提供的全局store，而keystoreInfo会成为本组件的this.props的其中一个成员
+const mapStateToProps = (state) => {
+  return { 
+    keystoreInfo: state.accountManager.keystoreInfo,
+    accounts: state.accountManager.accountNames,
+    isLoading: state.accountManager.isLoading,
+    createAccountResult: state.accountManager.createAccountResult,
+    accountInfo: state.accountManager.accountInfo,
+  };
+};
+
+const withConnect = connect(
+  mapStateToProps,
+  mapDispatchToProps
+);
+
+const withReducer = injectReducer({ key: 'accountManager', reducer });
+
+export default compose(
+  withReducer,
+  withConnect
+)(EditableTable);

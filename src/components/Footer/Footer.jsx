@@ -21,12 +21,12 @@ export default class Footer extends PureComponent {
           <div className="copyright">
             © 2018 Theme designed by{' '}
             <a
-              href="https://github.com/alibaba/ice"
+              href="https://github.com/fractalplatform/fractal"
               target="_blank"
               className="copyright-link"
               rel="noopener noreferrer"
             >
-              ICE
+              FRACTAL
             </a>
           </div>
         </div>

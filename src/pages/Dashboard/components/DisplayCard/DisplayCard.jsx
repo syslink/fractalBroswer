@@ -3,7 +3,7 @@ import React, { Component } from 'react';
 import IceContainer from '@icedesign/container';
 import { Balloon, Grid } from '@icedesign/base';
 import './DisplayCard.scss';
-import DataBinder from '@icedesign/data-binder';
+import injectReducer from '../../../../utils/injectReducer';
 import { getLatestBlock, getTransactionsNum } from './actions';
 import reducer from './reducer';
 
@@ -12,7 +12,7 @@ import { compose } from 'redux';
 
 const { Row, Col } = Grid;
 
-export default class extends Component {
+class BlockTxLayout extends Component {
   static displayName = '';
 
   static propTypes = {};
@@ -22,7 +22,6 @@ export default class extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      localNodeUrl: 'http://127.0.0.1:8545',
       lastBlockInfo: {},
     };
   }

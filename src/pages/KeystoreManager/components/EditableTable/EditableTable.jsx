@@ -15,10 +15,7 @@ export default class EditableTable extends Component {
   constructor(props) {
     super(props);
     
-    axios.defaults.headers.post['Content-Type'] = 'application/json';
-
     this.state = {
-      localNodeUrl: 'http://127.0.0.1:8545',
       dataSource: [],
       pwdDialogVisible: false,
       newPwdDialogVisible: false,
@@ -50,19 +47,18 @@ export default class EditableTable extends Component {
     const options = {
       method: 'POST',
       data: dataToSrv,
-      url: this.state.localNodeUrl,
     };
     var _this = this;
     axios(options).then(function (response) {
           if (response.data.hasOwnProperty("result")) {
             for( let keyValue of response.data.result){
-              _this.state.dataSource.push({address: keyValue.address, path: keyValue.path});
+              _this.state.dataSource.push({address: keyValue.address, publicKey: keyValue.publicKey, path: keyValue.path});
             }
             _this.setState({
               dataSource: this.state.dataSource
             });
           } else if (response.data.hasOwnProperty("error")) {
-            Feedback.toast.error('无法获取公私钥对');
+            Feedback.toast.error('无法获取秘钥');
           }
         })
         .catch(function (error) {
@@ -161,7 +157,7 @@ export default class EditableTable extends Component {
       successCallback: (response) => {
         console.log(response);
         var {result} = response.data;
-        this.state.dataSource.push({address: result.address, path: result.path});
+        this.state.dataSource.push({address: result.address, publicKey: result.publicKey, path: result.path});
         this.setState({
           dataSource: this.state.dataSource,
           pwdDialogVisible: false
@@ -178,7 +174,7 @@ export default class EditableTable extends Component {
       successCallback: (response) => {
         console.log(response);
         var {result} = response.data;
-        this.state.dataSource.push({address: result.address, path: result.path});
+        this.state.dataSource.push({address: result.address, publicKey: result.publicKey, path: result.path});
         this.setState({
           dataSource: this.state.dataSource,
           importKeyDialogVisible: false
@@ -203,7 +199,6 @@ export default class EditableTable extends Component {
     const options = {
       method: 'POST',
       data: dataToSrv,
-      url: this.state.localNodeUrl,
     };
     const _this = this;
     axios(options).then(function (response) {
@@ -248,7 +243,6 @@ export default class EditableTable extends Component {
     const options = {
       method: 'POST',
       data: dataToSrv,
-      url: this.state.localNodeUrl,
     };
     const _this = this;
     axios(options).then(function (response) {
@@ -280,7 +274,6 @@ export default class EditableTable extends Component {
     const options = {
       method: 'POST',
       data: dataToSrv,
-      url: this.state.localNodeUrl,
     };
     const _this = this;
     axios(options).then(function (response) {
@@ -324,8 +317,8 @@ export default class EditableTable extends Component {
             <Table.Column width={80} title="ID" cell={this.renderOrder} />
             <Table.Column
               width={120}
-              title="地址"
-              dataIndex="address"
+              title="公钥"
+              dataIndex="publicKey"
             />
             <Table.Column
               width={120}
