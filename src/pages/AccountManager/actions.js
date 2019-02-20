@@ -3,7 +3,8 @@ import {bindAccountAddrReq,
         deleteBoundInfoReq, 
         getBoundInfoReq, 
         getKeystoreReq, 
-        createAccountBySystemReq} from './api';
+        createAccountBySystemReq,
+        getAccountInfoReq,} from './api';
 
 import {
   BIND_ACCOUNT_REQUEST	,
@@ -292,9 +293,13 @@ export const createAccountBySystem = (params) => {
       const response = await createAccountBySystemReq(params);
       if (response.status == 200) {
         if (response.data.code == 0) {
-          dispatch(createAccountBySystemSuccessAction('')).then(
-            resp => (getAccountInfo(resp))
-          );
+          dispatch(createAccountBySystemSuccessAction(''));
+        //   .then(
+        //     resp => {
+        //         getAccountInfo(resp);
+        //     }
+        //   );
+          dispatch(getAccountInfo([params.account]));
         } else {
           dispatch(createAccountBySystemFailAction(response.data.message));
         }

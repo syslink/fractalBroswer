@@ -55,7 +55,7 @@ export async function getKeystoreReq(params) {
   });
 }
 
-export async function getAccountInfo(params) {
+export async function getAccountInfoReq(params) {
   var dataToSrv = JSON.stringify({"jsonrpc": "2.0", 
                                   "method": "account_getAccountByName", 
                                   "params": params,
@@ -83,4 +83,5 @@ export default {
   getBoundInfoReq,
   getKeystoreReq,
   createAccountBySystemReq,
+  getAccountInfoReq,
 };
