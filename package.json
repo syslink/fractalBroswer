@@ -19,6 +19,7 @@
     "@uiw/react-codemirror": "^1.0.19",
     "antd": "^3.13.2",
     "axios": "^0.17.1",
+    "bignumber.js": "^8.0.2",
     "bizcharts": "latest",
     "classnames": "^2.2.5",
     "enquire-js": "^0.1.2",
@@ -27,9 +28,12 @@
     "hoist-non-react-statics": "^2.5.5",
     "invariant": "^2.2.4",
     "lodash": "^4.17.10",
+    "material-ui": "^0.20.2",
     "path-to-regexp": "^2.2.1",
     "prop-types": "^15.6.2",
     "react": "^16.6.1",
+    "react-autocomplete": "^1.8.1",
+    "react-cookies": "^0.1.0",
     "react-document-title": "^2.0.3",
     "react-dom": "^16.4.1",
     "react-redux": "^5.0.7",
@@ -37,7 +41,8 @@
     "react-router-redux": "5.0.0-alpha.6",
     "react-transition-group": "^2.4.0",
     "redux": "3.6.0",
-    "redux-thunk": "^2.3.0"
+    "redux-thunk": "^2.3.0",
+    "rlp": "^2.2.2"
   },
   "devDependencies": {
     "babel-eslint": "^8.0.3",

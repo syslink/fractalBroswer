@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
-import { Search, Grid } from "@icedesign/base";
+import { Search, Grid, Table } from "@icedesign/base";
 import IceContainer from '@icedesign/container';
+import {getAssetInfo, getTransactionByHash, getTransactionReceipt} from '../../api'
 
 const { Row, Col } = Grid;
 
@@ -11,37 +12,36 @@ export default class TransactionTable extends Component {
     super(props);
     this.state = {
         value: "",
-        blockInfo: {
-            txhash: "0",
-            txReceiptStatus:"",
-            blockHeight:0,
-            timeStamp: "50 secs ago",
-            from: "",
-            inputs: "",
-            outputs: "",
-            tokenTransfered: "",
-            value: "",
-            gasUsedByTx: "",
-            gasPrice: "",
-            gasUsed: "",
-            gasLimit: "",
-            actualTxCost: "",
-            nonce: "",
-            inputData: ""
-        }
+        txInfo: {},
+        assetInfos: {},
+        actions: []
     };
   }
 
-  onSearch(value) {
-    console.log(value);
-  }
-
-  onChange(value) {
-    console.log(`input is: ${value}`);
-
-    this.setState({
-      value: value
-    });
+  onSearch = async (value) => {
+    var hash = value.key;
+    if (hash.indexOf("0x") == 0) {
+      var resp = await getTransactionByHash([hash]);
+      if (resp.data.result != undefined) {
+        var transaction = resp.data.result;
+        resp = await getTransactionReceipt([hash]);
+        var receipt = resp.data.result;
+        transaction['gasUsed'] = receipt.totalGasUsed;
+        for (var i = 0; i < transaction.actions.length; i++) {
+          transaction.actions[i]['result'] = receipt.actionResults[i].status == 1 ? '成功' : '失败';
+          transaction.actions[i]['gasUsed'] = receipt.actionResults[i].gasUsed;
+          transaction.actions[i]['error'] = receipt.actionResults[i].error;
+        }
+        this.setState({
+          txInfo: transaction,
+          actions: transaction.actions
+        });
+      } else {
+        Feedback.toast.error('无法获取到交易信息');
+      }
+    } else {
+      Feedback.toast.prompt('请输入十六进制的hash值');
+    }
   }
 
   // value为filter的值，obj为search的全量值
@@ -60,9 +60,8 @@ export default class TransactionTable extends Component {
                 <Search
                     size="large"
                     autoWidth="true"
-                    onChange={this.onChange.bind(this)}
                     onSearch={this.onSearch.bind(this)}
-                    placeholder="tx hash"
+                    placeholder="交易hash"
                     onFilterChange={this.onFilterChange.bind(this)}
                 />
             </Col>
@@ -70,76 +69,53 @@ export default class TransactionTable extends Component {
         </IceContainer>
 
         <IceContainer style={styles.container}>
-            <h4 style={styles.title}>Transaction Information</h4>
+            <h4 style={styles.title}>交易信息</h4>
             <ul style={styles.summary}>
               <li style={styles.item}>
                 <span style={styles.label}>TxHash:</span>
                 <span style={styles.value}>
-                  {this.state.blockInfo.txhash}
+                  {this.state.txInfo.txHash}
                 </span>
               </li>
               <li style={styles.item}>
-                <span style={styles.label}>TxReceipt Status:</span>
-                <span style={styles.value}>{this.state.blockInfo.txReceiptStatus}</span>
-              </li>
-              <li style={styles.item}>
                 <span style={styles.label}>Block Height:</span>
-                <span style={styles.value}>0.0.1</span>
+                <span style={styles.value}>{this.state.txInfo.blockNumber}</span>
               </li>
               <li style={styles.item}>
                 <span style={styles.label}>Block Hash:</span>
-                <span style={styles.value}>0.0.1</span>
+                <span style={styles.value}>{this.state.txInfo.blockHash}</span>
               </li>
               <li style={styles.item}>
-                <span style={styles.label}>TimeStamp:</span>
-                <span style={styles.value}>000001</span>
-              </li>
-              <li style={styles.item}>
-                <span style={styles.label}>From:</span>
-                <span style={styles.value}>淘小宝</span>
-              </li>
-              <li style={styles.item}>
-                <span style={styles.label}>Inputs:</span>
-                <span style={styles.value}>2018-08-29 11:28:23</span>
-              </li>
-              <li style={styles.item}>
-                <span style={styles.label}>Outputs:</span>
-                <span style={styles.value}>2018-08-29 11:28:23</span>
-              </li>
-              <li style={styles.item}>
-                <span style={styles.label}>Tokens Transfered:</span>
-                <span style={styles.value}>2018-08-29 11:28:23</span>
-              </li>
-              <li style={styles.item}>
-                <span style={styles.label}>Value:</span>
-                <span style={styles.value}>2018-08-29 11:28:23</span>
-              </li>
-              <li style={styles.item}>
-                <span style={styles.label}>Gas Used By Transaction：</span>
-                <span style={styles.value}>2018-08-29 11:28:23</span>
-              </li>
-              <li style={styles.item}>
-                <span style={styles.label}>Gas Limit：</span>
-                <span style={styles.value}>2018-08-29 11:28:23</span>
+                <span style={styles.label}>Gas Used:</span>
+                <span style={styles.value}>{this.state.txInfo.gasUsed}</span>
               </li>
               <li style={styles.item}>
                 <span style={styles.label}>Gas Price:</span>
-                <span style={styles.value}>2018-08-29 11:28:23</span>
-              </li>
-              <li style={styles.item}>
-                <span style={styles.label}>Actual Tx Cost/Fee:</span>
-                <span style={styles.value}>2018-08-29 11:28:23</span>
-              </li>
-              <li style={styles.item}>
-                <span style={styles.label}>Nonce：</span>
-                <span style={styles.value}>2018-08-29 11:28:23</span>
-              </li>
-              <li style={styles.item}>
-                <span style={styles.label}>Input Data：</span>
-                <span style={styles.value}>2018-08-29 11:28:23</span>
+                <span style={styles.value}>{this.state.txInfo.gasPrice}</span>
               </li>
             </ul>
           </IceContainer>
+          <br/>
+          <br/>
+          <IceContainer>
+            <h4 style={styles.title}>Action信息</h4>
+            <Table
+              getRowClassName={(record, index) => {
+                return `progress-table-tr progress-table-tr${index}`;
+              }}
+              dataSource={this.state.actions}
+            >
+              <Table.Column title="类型" dataIndex="type" width={50} />
+              <Table.Column title="发送账号" dataIndex="from" width={50} />
+              <Table.Column title="接收账号" dataIndex="to" width={50} />
+              <Table.Column title="资产ID" dataIndex="assetID" width={50} />
+              <Table.Column title="资产金额" dataIndex="value" width={50} />
+              <Table.Column title="负载信息" dataIndex="payload" width={80} />
+              <Table.Column title="消耗GAS" dataIndex="gasUsed" width={50} />
+              <Table.Column title="结果" dataIndex="result" width={50} />
+              <Table.Column title="错误信息" dataIndex="error" width={50} />
+            </Table>
+         </IceContainer>
       </div>
     );
   }
@@ -165,12 +141,13 @@ const styles = {
       padding: '20px',
     },
     item: {
-      height: '32px',
-      lineHeight: '32px',
+      height: '40px',
+      lineHeight: '40px',
     },
     label: {
       display: 'inline-block',
       fontWeight: '500',
       minWidth: '74px',
+      width: '150px'
     },
   };

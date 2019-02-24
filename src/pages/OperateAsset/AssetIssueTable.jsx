@@ -71,17 +71,6 @@ export default class AssetIssueTable extends Component {
         >
             <div style={styles.formContent}>
                 <Row style={styles.formRow} justify='center'>
-                    Type:{" "}
-                    <IceFormBinder required message="Required!">
-                        <RadioGroup
-                            name="assetType"
-                            dataSource={assetTypeList}
-                            value={0}
-                            size="medium"
-                        />
-                    </IceFormBinder>
-                </Row>
-                <Row style={styles.formRow} justify='center'>
                     <IceFormBinder required message="Required!">
                         <Input hasClear
                             addonBefore="Name:"

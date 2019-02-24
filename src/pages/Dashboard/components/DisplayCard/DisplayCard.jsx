@@ -6,10 +6,15 @@ import './DisplayCard.scss';
 import injectReducer from '../../../../utils/injectReducer';
 import { getLatestBlock, getTransactionsNum } from './actions';
 import reducer from './reducer';
-
 import { connect } from 'react-redux';
 import { compose } from 'redux';
-
+import {  getCurrentBlock, getBlockByHash, getBlockByNum,
+          getTransactionByHash, getTransactionReceipt, 
+          getTxNumByBlockHash, getTxNumByBlockNum,
+          getTotalTxNumByBlockHash, getTotalTxNumByBlockNum,
+          getProducers, getDposAccountInfo, getDposIrreversibleInfo,
+          getValidateEpchoInfo, getLatestEpchoInfo} from '../../../../api';
+import eventProxy from '../../../../utils/eventProxy';
 const { Row, Col } = Grid;
 
 class BlockTxLayout extends Component {
@@ -22,8 +27,98 @@ class BlockTxLayout extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      lastBlockInfo: {},
+      curBlockInfo: {},
+      dposInfo: {},
+      latestEpchoInfo: {},
+      irreversible: {},
+      blockDataSource: [],
+      txDataSource: [],
+      curProducerList: [],
+      activeProducers: [],
+      totalTxNumInOneHour: 0,
+      maxTPS: 0,
+      txNums: [],
+      txInfos: [],
     };
+  }
+
+  componentDidMount() {
+    this.updateBlockChainInfo();
+  }
+
+  updateBlockChainInfo = async () => {
+    var resp = await getCurrentBlock([false]);
+    var curBlockInfo = resp.data.result; 
+    var curHeight = curBlockInfo.number;
+
+    eventProxy.trigger('curHeight', curHeight);
+
+    resp = await getDposIrreversibleInfo();
+    var irreversibleInfo = resp.data.result;
+
+    resp = await getLatestEpchoInfo();
+    var latestEpchoInfo = resp.data.result;
+    
+    resp = await getProducers();
+    var producers = resp.data.result;
+
+    var blockInterval = 3;
+    var intervalTime = 5 * 60; // 5 minutes, 100 blocks
+    var interval = intervalTime / 3;
+    var oneHour = 3600;
+    var maxSpan = oneHour / blockInterval;
+    //var txNums = this.caculateTxNums(curHeight, intervalTime / blockInterval, oneHour / blockInterval);
+
+    var lastMaxHeight = 0;
+    if (this.state.txInfos.length > 0) {
+      lastMaxHeight = this.state.txInfos[this.state.txInfos.length - 1].blockHeight;
+    }
+    var totalNum = 0;
+    var maxTxNum = 0;
+    for (var fromHeigth = curHeight - maxSpan + interval; fromHeigth <= curHeight;) {
+      if (fromHeigth <= lastMaxHeight) {
+        fromHeigth = fromHeigth + interval;
+        continue;
+      }
+      var resp = await getTotalTxNumByBlockNum([fromHeigth, interval]);
+      var txNum = resp.data.result;
+      this.state.txInfos.push({blockHeight:fromHeigth, txNum:txNum});
+      totalNum += txNum;
+      if (txNum > maxTxNum) {
+        maxTxNum = txNum;
+      }
+      fromHeigth = fromHeigth + interval;
+    }
+    eventProxy.trigger('txInfos', this.state.txInfos);
+    this.setState({
+      curBlockInfo: curBlockInfo,
+      irreversible: irreversibleInfo,
+      totalTxNumInOneHour: totalNum,
+      maxTPS: Math.round(maxTxNum / intervalTime),
+      latestEpchoInfo: latestEpchoInfo,
+      curProducerList: producers,
+      activeProducers: latestEpchoInfo.ActivatedProducerSchedule,
+    });
+
+    setTimeout(() => {this.updateBlockChainInfo()}, 3000);
+  }
+
+  caculateTxNums = async (curHeight, interval, maxSpan) => {
+    var txNums = [];
+    var totalNum = 0;
+    var maxTxNum = 0;
+    for (var from = curHeight; from > curHeight - maxSpan + interval;) {
+      var resp = await getTotalTxNumByBlockNum([from, interval]);
+      var txNum = resp.data.result;
+      txNums.push(txNum);
+      totalNum += txNum;
+      if (txNum > maxTxNum) {
+        maxTxNum = txNum;
+      }
+      from = from - interval;
+    }
+    //var txNumsInfo = [maxTxNum, ...txNums];
+    return {txNums, totalNum, maxTxNum};
   }
 
   render() {
@@ -47,26 +142,10 @@ class BlockTxLayout extends Component {
         <Row wrap>
           <Col xxs="24" s="12" l="6" style={styles.item}>
             <div style={styles.title} className="title">
-              Last Block
-              <span style={styles.extraIcon}>
-                <Balloon
-                  trigger={
-                    <img
-                      src={require('./images/TB1mfqwXFuWBuNjSszbXXcS7FXa-36-36.png')}
-                      alt=""
-                      width="12"
-                      height="12"
-                    />
-                  }
-                  triggerType="hover"
-                  closable={false}
-                >
-                  View List Of Blocks
-                </Balloon>
-              </span>
+              最新区块
             </div>
             <div className="count" style={styles.count}>
-              {this.state.lastBlockNum}
+              {this.state.curBlockInfo.number}
               <span style={styles.extraIcon}>
                 <Balloon
                   trigger={
@@ -80,14 +159,36 @@ class BlockTxLayout extends Component {
                   triggerType="hover"
                   closable={false}
                 >
-                  The Lastest Block No
+                  最新区块高度
+                </Balloon>
+              </span>
+            </div>
+            <div className="count" style={styles.smallCount}>
+              {this.state.irreversible.ProposedIrreversible}
+              <span style={styles.extraIcon}>
+                <Balloon
+                  trigger={
+                    <img
+                      src={require('./images/TB1mfqwXFuWBuNjSszbXXcS7FXa-36-36.png')}
+                      alt=""
+                      width="12"
+                      height="12"
+                    />
+                  }
+                  triggerType="hover"
+                  closable={false}
+                >
+                  不可逆区块高度
                 </Balloon>
               </span>
             </div>
           </Col>
           <Col xxs="24" s="12" l="6" style={styles.item}>
             <div style={styles.title} className="title">
-              Transactions
+              交易信息
+            </div>
+            <div style={styles.count} className="count">
+              {this.state.maxTPS} TPS
               <span style={styles.extraIcon}>
                 <Balloon
                   trigger={
@@ -101,12 +202,12 @@ class BlockTxLayout extends Component {
                   triggerType="hover"
                   closable={false}
                 >
-                  View List Of Transacations
+                  一小时内最高TPS
                 </Balloon>
               </span>
             </div>
-            <div style={styles.count} className="count">
-              533 M (560 TPS)
+            <div style={styles.smallCount} className="count">
+              {this.state.totalTxNumInOneHour} Txns 
               <span style={styles.extraIcon}>
                 <Balloon
                   trigger={
@@ -120,33 +221,17 @@ class BlockTxLayout extends Component {
                   triggerType="hover"
                   closable={false}
                 >
-                  Total Transactions Counter(Update Every 5 Minute)
+                 最近一小时交易数
                 </Balloon>
               </span>
             </div>
           </Col>
           <Col xxs="24" s="12" l="6" style={styles.item}>
             <div style={styles.title} className="title">
-              Hash Rate
-              <span style={styles.extraIcon}>
-                <Balloon
-                  trigger={
-                    <img
-                      src={require('./images/TB1mfqwXFuWBuNjSszbXXcS7FXa-36-36.png')}
-                      alt=""
-                      width="12"
-                      height="12"
-                    />
-                  }
-                  triggerType="hover"
-                  closable={false}
-                >
-                  View Hash Rate Chart
-                </Balloon>
-              </span>
+              生产者
             </div>
             <div style={styles.count} className="count">
-              2,233,000 GH/s
+              {this.state.curProducerList.length}
               <span style={styles.extraIcon}>
                 <Balloon
                   trigger={
@@ -160,15 +245,13 @@ class BlockTxLayout extends Component {
                   triggerType="hover"
                   closable={false}
                 >
-                  Avg Hash Rate (The Last 12 Hours)
+                  注册为生产者的节点数量
                 </Balloon>
               </span>
               <s></s>
             </div>
-          </Col>
-          <Col xxs="24" s="12" l="6" style={styles.item}>
-            <div style={styles.title} className="title">
-              Network Difficulty
+            <div style={styles.smallCount} className="count">
+              {this.state.activeProducers.length} 
               <span style={styles.extraIcon}>
                 <Balloon
                   trigger={
@@ -182,12 +265,17 @@ class BlockTxLayout extends Component {
                   triggerType="hover"
                   closable={false}
                 >
-                  View Difficulty Growth Chart
+                 出块节点数量
                 </Balloon>
               </span>
             </div>
+          </Col>
+          <Col xxs="24" s="12" l="6" style={styles.item}>
+            <div style={styles.title} className="title">
+              投票数
+            </div>
             <div style={styles.count} className="count">
-             3,008.18 TH
+             {this.state.latestEpchoInfo.TotalQuantity} FT
              <span style={styles.extraIcon}>
                 <Balloon
                   trigger={
@@ -201,7 +289,26 @@ class BlockTxLayout extends Component {
                   triggerType="hover"
                   closable={false}
                 >
-                  Avg Difficulty
+                  总投出的票数
+                </Balloon>
+              </span>
+            </div>
+            <div style={styles.smallCount} className="count">
+              {this.state.latestEpchoInfo.ActivatedTotalQuantity} FT
+              <span style={styles.extraIcon}>
+                <Balloon
+                  trigger={
+                    <img
+                      src={require('./images/TB1mfqwXFuWBuNjSszbXXcS7FXa-36-36.png')}
+                      alt=""
+                      width="12"
+                      height="12"
+                    />
+                  }
+                  triggerType="hover"
+                  closable={false}
+                >
+                 出块节点获得的总票数
                 </Balloon>
               </span>
             </div>
@@ -229,6 +336,11 @@ const styles = {
   },
   count: {
     fontSize: '24px',
+    fontWeight: 'bold',
+    marginBottom: '3px',
+  },
+  smallCount: {
+    fontSize: '12px',
     fontWeight: 'bold',
     marginBottom: '3px',
   },

@@ -3,19 +3,8 @@ import React, { Component } from 'react';
 import { Table, Progress, Pagination } from '@icedesign/base';
 import IceContainer from '@icedesign/container';
 
-const getTableData = () => {
-  return Array.from({ length: 10 }).map((item, index) => {
-    return {
-      height: 1000,
-      age: '42 secs ago',
-      txn: 300,
-      gasUsed: 7999999,
-      gasLimit: 8000000,
-      avgGasPrice: '15 Gwei',
-      reward : '5000 zip'
-    };
-  });
-};
+import eventProxy from '../../../../utils/eventProxy';
+import {  getBlockByNum } from '../../../../api';
 
 export default class BlocksTable extends Component {
   static displayName = 'BlocksTable';
@@ -24,47 +13,46 @@ export default class BlocksTable extends Component {
     super(props);
 
     this.state = {
-      dataSource: getTableData(),
-      current: 1,
+      dataSource: [],
     };
+  }
+
+  componentDidMount() {
+  	
+    eventProxy.on('curHeight', async (msg) => {
+      this.state.dataSource = [];
+      var curHeight = msg;
+      for (var i = curHeight; i > curHeight - 18 && i >= 0; i--) {
+        var resp = await getBlockByNum([i, false]);
+        var curBlockInfo = resp.data.result; 
+        curBlockInfo['txn'] = curBlockInfo.transactions.length;
+        this.state.dataSource.push(curBlockInfo);
+      }
+      
+      this.setState({
+        dataSource: this.state.dataSource,
+      });
+    });
   }
 
   renderCellProgress = value => (
     <Progress showInfo={false} percent={parseInt(value, 10)} />
   );
 
-  onPageChange = (pageNo) => {
-    this.setState({
-      current: pageNo,
-    });
-  };
-
   render() {
     return (
       <div className="progress-table">
-        <IceContainer className="tab-card" title="Blocks">
+        <IceContainer className="tab-card" title="区块">
           <Table
-            getRowClassName={(record, index) => {
-              return `progress-table-tr progress-table-tr${index}`;
-            }}
             dataSource={this.state.dataSource}
           >
-            <Table.Column title="Height" dataIndex="height" width={100} />
-            <Table.Column title="Age" dataIndex="age" width={200} />
-            <Table.Column title="txn" dataIndex="txn" width={100} />
-            <Table.Column title="GasUsed" dataIndex="gasUsed" width={100} />
-            <Table.Column title="GasLimit" dataIndex="gasLimit" width={100} />
-            <Table.Column title="Avg.GasPrice" dataIndex="avgGasPrice" width={100} />
-            <Table.Column title="Reward" dataIndex="reward" width={100} />
+            <Table.Column title="高度" dataIndex="number" width={100} />
+            <Table.Column title="Hash" dataIndex="hash" width={200} />
+            <Table.Column title="交易数" dataIndex="txn" width={100} />
+            <Table.Column title="Gas消耗" dataIndex="gasUsed" width={100} />
+            <Table.Column title="生产者" dataIndex="miner" width={100} />
             
           </Table>
-          <div style={styles.paginationWrapper}>
-            <Pagination
-              current={this.state.current}
-              onChange={this.onPageChange}
-              shape="arrow-only"
-            />
-          </div>
         </IceContainer>
       </div>
     );

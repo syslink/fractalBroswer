@@ -21,90 +21,90 @@ const headerMenuConfig = [
 
 const asideMenuConfig = [
   {
-    name: 'Dashboard',
+    name: '概览',
     path: '/dashboard',
     icon: 'home2',
   },
+  // {
+  //   name: 'Nodes Info',
+  //   path: '/chart',
+  //   icon: 'chart1',
+  //   children: [
+  //     {
+  //       name: 'Wallet Node',
+  //       path: '/page17',
+  //       authority: 'admin',
+  //     },
+  //     {
+  //       name: 'Producer Nodes',
+  //       path: '/Configure',
+  //       authority: 'admin',
+  //     },
+  //   ],
+  // },
   {
-    name: 'Nodes Info',
-    path: '/chart',
-    icon: 'chart1',
-    children: [
-      {
-        name: 'Wallet Node',
-        path: '/page17',
-        authority: 'admin',
-      },
-      {
-        name: 'Producer Nodes',
-        path: '/Configure',
-        authority: 'admin',
-      },
-    ],
-  },
-  {
-    name: 'Account Manager',
+    name: '账户管理',
     path: '/table',
     icon: 'table',
     // authority: 'admin',
     children: [
       {
-        name: 'Keystore',
+        name: '秘钥',
         path: '/KeystoreManager',
         authority: 'admin',
       },
       {
-        name: 'Account',
+        name: '账号',
         path: '/AccountManager',
         authority: 'admin',
       },
     ],
   },
   {
-    name: 'Block & Transaction',
+    name: '区块 & 交易',
     path: '/list',
     icon: 'ul-list',
     children: [
       {
-        name: 'Block',
+        name: '区块',
         path: '/Block',
       },
       {
-        name: 'Transaction',
+        name: '交易',
         path: '/Transaction',
       },
     ],
   },
   {
-    name: 'Asset Manager',
+    name: '资产管理',
     path: '/portlets',
     icon: 'publish',
     children: [
       {
-        name: 'Asser Search',
+        name: '资产搜索',
         path: '/assetSearch',
       },
       {
-        name: 'Asset Operator',
+        name: '资产操作',
         path: '/assetOperator',
       },
     ],
   },
-  {
-    name: 'Contract Manager',
-    path: '/result',
-    icon: 'result',
-    children: [
-      {
-        name: 'Contract Editor',
-        path: '/contractManager',
-      },
-      {
-        name: 'Contract Viewer',
-        path: '/result/fail',
-      },
-    ],
-  },
+  // {
+  //   name: 'Contract Manager',
+  //   path: '/result',
+  //   icon: 'result',
+  //   children: [
+  //     {
+  //       name: 'Contract Editor',
+  //       path: '/contractManager',
+  //     },
+  //     {
+  //       name: 'Contract Viewer',
+  //       path: '/result/fail',
+  //     },
+  //   ],
+  // },
 ];
 
 export { headerMenuConfig, asideMenuConfig };

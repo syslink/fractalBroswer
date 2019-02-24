@@ -1,6 +1,8 @@
 import React, { Component } from 'react';
 import { Chart, Axis, Geom, Tooltip } from 'bizcharts';
 
+import eventProxy from '../../../../utils/eventProxy';
+
 export default class BasicLine extends Component {
   static displayName = 'BasicLine';
 
@@ -10,45 +12,42 @@ export default class BasicLine extends Component {
 
   constructor(props) {
     super(props);
-    this.state = {};
+    this.state = {
+      txInfos:[]
+    };
+  }
+  componentDidMount() {
+  	// 监听 msg 事件
+    eventProxy.on('txInfos', (msg) => {
+      this.setState({
+        txInfos: msg
+      });
+    });
   }
 
   render() {
-    // 参考：https://alibaba.github.io/BizCharts/
-    // 数据源
-    const data = [
-      { year: '11/1', value: 30 },
-      { year: '11/2', value: 40 },
-      { year: '11/3', value: 35 },
-      { year: '11/4', value: 50 },
-      { year: '11/5', value: 39 },
-      { year: '11/6', value: 50 },
-      { year: '11/7', value: 40 },
-      { year: '11/8', value: 45 },
-      { year: '11/9', value: 50 },
-    ];
-
+    
     const cols = {
-      value: { min: 0 },
-      year: { range: [0, 1] },
+      txNum: { min: 1000 },
+      blockHeight: { range: [0, 1] },
     };
 
     return (
       <div className="basic-line">
         <Chart
           height={300}
-          data={data}
+          data={this.state.txInfos}
           scale={cols}
           forceFit
           padding={[40, 35, 40, 35]}
         >
-          <Axis name="year" />
-          <Axis name="value" />
+          <Axis name="blockHeight" />
+          <Axis name="txNum" />
           <Tooltip crosshairs={{ type: 'y' }} />
-          <Geom type="line" position="year*value" size={2} />
+          <Geom type="line" position="blockHeight*txNum" size={2} />
           <Geom
             type="point"
-            position="year*value"
+            position="blockHeight*txNum"
             size={4}
             shape="circle"
             style={styles.point}

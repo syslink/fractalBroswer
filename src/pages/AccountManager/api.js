@@ -1,8 +1,8 @@
 import axios from 'axios';
 
-export async function bindAccountAddrReq(params) {
+export async function bindAccountPublicKeyReq(params) {
   var dataToSrv = JSON.stringify({"jsonrpc": "2.0", 
-                                    "method": "keystore_bindAccountName", 
+                                    "method": "keystore_bindAccountAndPublicKey", 
                                     "params": params,
                                     "id": 1});
   return axios({
@@ -13,7 +13,7 @@ export async function bindAccountAddrReq(params) {
 
 export async function updateBoundInfoReq(params) {
   var dataToSrv = JSON.stringify({"jsonrpc": "2.0", 
-                                    "method": "keystore_updateBindingAddr", 
+                                    "method": "keystore_updateBindingInfo", 
                                     "params": params,
                                     "id": 1});
   return axios({
@@ -35,7 +35,7 @@ export async function deleteBoundInfoReq(params) {
 
 export async function getBoundInfoReq(params) {
   var dataToSrv = JSON.stringify({"jsonrpc": "2.0", 
-                                    "method": "keystore_getAccountNameByAddr", 
+                                    "method": "keystore_getAccountsByPublicKeys", 
                                     "params": params,
                                     "id": 1});
   return axios({
@@ -67,17 +67,16 @@ export async function getAccountInfoReq(params) {
 }
 
 export async function createAccountBySystemReq(params) {
-  let data = {"account": params.account,
+  let data = {"account": params.accountName,
               "publicKey": params.publicKey,
               "email": params.email,
             };
   return axios.post('http://192.168.0.170:8182/account/create', 
                     JSON.stringify(data)); 
-                    //{headers: {'Content-Type': 'application/x-www-form-urlencoded'}});
 }
 
 export default {
-  bindAccountAddrReq,
+  bindAccountPublicKeyReq,
   updateBoundInfoReq,
   deleteBoundInfoReq,
   getBoundInfoReq,

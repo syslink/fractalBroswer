@@ -1,34 +1,246 @@
 import axios from 'axios';
 
-export async function login(params) {
+
+export async function getCurrentBlock(params) {
+  var dataToSrv = JSON.stringify({"jsonrpc": "2.0", 
+                                  "method": "ft_getCurrentBlock", 
+                                  "params": params,
+                                  "id": 1});
   return axios({
-    url: '/api/login',
     method: 'post',
-    data: params,
+    data: dataToSrv,
   });
 }
 
-export async function postUserRegister(params) {
+export async function getBlockByHash(params) {
+  var dataToSrv = JSON.stringify({"jsonrpc": "2.0", 
+                                  "method": "ft_getBlockByHash", 
+                                  "params": params,
+                                  "id": 1});
   return axios({
-    url: '/api/register',
     method: 'post',
-    data: params,
+    data: dataToSrv,
   });
 }
 
-export async function postUserLogout() {
+export async function getBlockByNum(params) {
+  var dataToSrv = JSON.stringify({"jsonrpc": "2.0", 
+                                  "method": "ft_getBlockByNumber", 
+                                  "params": params,
+                                  "id": 1});
   return axios({
-    url: '/api/logout',
     method: 'post',
+    data: dataToSrv,
   });
 }
 
-export async function getUserProfile() {
-  return axios('/api/profile');
+export async function getTransactionByHash(params) {
+  var dataToSrv = JSON.stringify({"jsonrpc": "2.0", 
+                                  "method": "ft_getTransactionByHash", 
+                                  "params": params,
+                                  "id": 1});
+  return axios({
+    method: 'post',
+    data: dataToSrv,
+  });
+}
+
+export async function getTransactionReceipt(params) {
+  var dataToSrv = JSON.stringify({"jsonrpc": "2.0", 
+                                  "method": "ft_getTransactionReceipt", 
+                                  "params": params,
+                                  "id": 1});
+  return axios({
+    method: 'post',
+    data: dataToSrv,
+  });
+}
+
+export async function getTxNumByBlockHash(params) {
+  var dataToSrv = JSON.stringify({"jsonrpc": "2.0", 
+                                  "method": "ft_getTxNumByBlockHash", 
+                                  "params": params,
+                                  "id": 1});
+  return axios({
+    method: 'post',
+    data: dataToSrv,
+  });
+}
+
+export async function getTxNumByBlockNum(params) {
+  var dataToSrv = JSON.stringify({"jsonrpc": "2.0", 
+                                  "method": "ft_getTxNumByBlockNum", 
+                                  "params": params,
+                                  "id": 1});
+  return axios({
+    method: 'post',
+    data: dataToSrv,
+  });
+}
+
+
+
+export async function getTotalTxNumByBlockHash(params) {
+  var dataToSrv = JSON.stringify({"jsonrpc": "2.0", 
+                                  "method": "ft_getTotalTxNumByBlockHash", 
+                                  "params": params,
+                                  "id": 1});
+  return axios({
+    method: 'post',
+    data: dataToSrv,
+  });
+}
+
+export async function getTotalTxNumByBlockNum(params) {
+  var dataToSrv = JSON.stringify({"jsonrpc": "2.0", 
+                                  "method": "ft_getTotalTxNumByBlockNum", 
+                                  "params": params,
+                                  "id": 1});
+  return axios({
+    method: 'post',
+    data: dataToSrv,
+  });
+}
+
+
+export async function getProducers() {
+  var dataToSrv = JSON.stringify({"jsonrpc": "2.0", 
+                                  "method": "dpos_producers", 
+                                  "params": [],
+                                  "id": 1});
+  return axios({
+    method: 'post',
+    data: dataToSrv,
+  });
+}
+
+
+export async function getDposAccountInfo(params) {
+  var dataToSrv = JSON.stringify({"jsonrpc": "2.0", 
+                                  "method": "dpos_account", 
+                                  "params": params,
+                                  "id": 1});
+  return axios({
+    method: 'post',
+    data: dataToSrv,
+  });
+}
+
+
+export async function getDposIrreversibleInfo(params) {
+  var dataToSrv = JSON.stringify({"jsonrpc": "2.0", 
+                                  "method": "dpos_irreversible", 
+                                  "params": params,
+                                  "id": 1});
+  return axios({
+    method: 'post',
+    data: dataToSrv,
+  });
+}
+
+export async function getAssetInfo(params) {
+  var dataToSrv = JSON.stringify({"jsonrpc": "2.0", 
+                                  "method": "account_getAssetInfoByID", 
+                                  "params": params,
+                                  "id": 1});
+  return axios({
+    method: 'post',
+    data: dataToSrv,
+  });
+}
+
+export async function getSuggestionGasPrice() {
+  var dataToSrv = JSON.stringify({"jsonrpc": "2.0", 
+                                  "method": "ft_gasPrice", 
+                                  "params": [],
+                                  "id": 1});
+  return axios({
+    method: 'post',
+    data: dataToSrv,
+  });
+}
+
+export async function getValidateEpchoInfo() {
+  var dataToSrv = JSON.stringify({"jsonrpc": "2.0", 
+                                  "method": "dpos_validateEpcho", 
+                                  "params": [],
+                                  "id": 1});
+  return axios({
+    method: 'post',
+    data: dataToSrv,
+  });
+}
+
+export async function getLatestEpchoInfo() {
+  var dataToSrv = JSON.stringify({"jsonrpc": "2.0", 
+                                  "method": "dpos_latestEpcho", 
+                                  "params": [],
+                                  "id": 1});
+  return axios({
+    method: 'post',
+    data: dataToSrv,
+  });
+}
+
+export async function getNonce(params) {
+  var dataToSrv = JSON.stringify({"jsonrpc": "2.0", 
+                                  "method": "account_getNonce", 
+                                  "params": params,
+                                  "id": 1});
+  return axios({
+    method: 'post',
+    data: dataToSrv,
+  });
+}
+
+export async function sendTransaction(params) {
+  var resp = await getNonce([params.accountName]);
+  var basicInfo = {"actionType":params.actionType, 
+                   "chainID":45, 
+                   "gasAssetId":1, 
+                   "from":params.accountName, 
+                   "to":params.toAccountName == undefined ? '' : params.toAccountName, 
+                   "nonce":resp.data.result, 
+                   "assetId":params.assetId == undefined ? 1 : params.assetId, 
+                   "gas":params.gasLimit == undefined ? 200000 : params.gasLimit, 
+                   "gasPrice":params.gasPrice == undefined ? 10 : params.gasPrice, 
+                   "value":params.value == undefined ? 0 : params.value, 
+                   "data":params.data == undefined ? '' : params.data, 
+                   "password":params.password}
+  var dataToSrv = JSON.stringify({"jsonrpc": "2.0", 
+                                  "method": "ft_sendTransaction", 
+                                  "params": [basicInfo],
+                                  "id": 1});
+  return axios({
+    method: 'post',
+    data: dataToSrv,
+  });
+}
+export async function getAccountInfo(params) {
+  var dataToSrv = JSON.stringify({"jsonrpc": "2.0", 
+                                  "method": "account_getAccountByName", 
+                                  "params": params,
+                                  "id": 1});
+  return axios({
+    method: 'post',
+    data: dataToSrv,
+  });
 }
 
 export default {
-  postUserRegister,
-  postUserLogout,
-  getUserProfile,
+  getCurrentBlock,
+  getBlockByHash,
+  getBlockByNum,
+  getTransactionByHash,
+  getTransactionReceipt,
+  getTxNumByBlockHash,
+  getTxNumByBlockNum,
+  getTotalTxNumByBlockHash,
+  getTotalTxNumByBlockNum,
+  getProducers,
+  getDposAccountInfo,
+  getDposIrreversibleInfo,
+  sendTransaction,
+  getValidateEpchoInfo,
+  getAccountInfo,
 };

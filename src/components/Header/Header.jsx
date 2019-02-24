@@ -25,13 +25,13 @@ export default class Header extends PureComponent {
           className="ice-design-layout-header-menu"
           style={{ display: 'flex' }}
         >
-          <Search
+          {/* <Search
             style={{ fontSize: '12px' }}
             size="large"
             inputWidth={400}
             searchText="Search"
             placeholder="Search by Address / Txhash / Block / Token / Ens"
-          />
+          /> */}
           {/* Header 菜单项 begin */}
           {headerMenuConfig && headerMenuConfig.length > 0 ? (
             <Menu mode="horizontal" selectedKeys={[]}>
