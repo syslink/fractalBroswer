@@ -83,7 +83,7 @@ export default class BlockTable extends Component {
       }
 
       this.setState({
-        blockInfo: resp.data.result,
+        blockInfo: curBlockInfo,
         txNum: transactions.length,
         transactions: transactions,
         transactionsOnePage: transactions.slice(0, this.state.onePageNum),
@@ -119,6 +119,12 @@ export default class BlockTable extends Component {
       transactionsOnePage: transactions,
     });
   }
+  getValidTime = (timestamp) => {
+    var renderTime = new BigNumber(timestamp);
+    renderTime = renderTime.shiftedBy(6 * -1);
+
+    return new Date(renderTime.toNumber()).toLocaleString()
+  }
   render() {
     return (
       <div>
@@ -147,7 +153,7 @@ export default class BlockTable extends Component {
               </li>
               <li style={styles.item}>
                 <span style={styles.label}>时间戳：</span>
-                <span style={styles.value}>{new Date(this.state.blockInfo.timestamp).toLocaleString()}</span>
+                <span style={styles.value}>{this.getValidTime(this.state.blockInfo.timestamp)}</span>
               </li>
               <li style={styles.item}>
                 <span style={styles.label}>交易数：</span>

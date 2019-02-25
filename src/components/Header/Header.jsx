@@ -1,6 +1,6 @@
 /* eslint jsx-a11y/no-noninteractive-element-interactions:0 */
 import React, { PureComponent } from 'react';
-import { Balloon, Icon, Input, Dialog, Feedback, Search } from '@icedesign/base';
+import { Icon, Input, Dialog, Feedback, Search } from '@icedesign/base';
 import IceImg from '@icedesign/img';
 import Layout from '@icedesign/layout';
 import Menu from '@icedesign/menu';
@@ -9,9 +9,12 @@ import cx from 'classnames';
 import { Link } from 'react-router-dom';
 import { headerMenuConfig } from '../../menuConfig';
 import Logo from '../Logo';
-import { Tag, Button } from '@alifd/next';
+import { Tag, Button, Balloon } from '@alifd/next';
 import cookie from 'react-cookies'
 import axios from 'axios';
+import { createHashHistory } from 'history'
+
+export const history = createHashHistory()
 
 export default class Header extends PureComponent {
 
@@ -20,8 +23,13 @@ export default class Header extends PureComponent {
     this.state = {
         nodeConfigVisible: false,
         ip: '127.0.0.1',
-        port: 8545
+        port: 8545,
+        nodeInfo: "http://127.0.0.1:8545",
     };
+    var nodeInfo = cookie.load("nodeInfo");
+    if (nodeInfo != null && nodeInfo != '') {
+      this.state.nodeInfo = nodeInfo;
+    }
   }
   openSetDialog = () => {
     this.setState({nodeConfigVisible: true});
@@ -44,9 +52,12 @@ export default class Header extends PureComponent {
     var nodeInfo = "http://" + this.state.ip + ":" + this.state.port;
     cookie.save("nodeInfo", nodeInfo);
     axios.defaults.baseURL = nodeInfo;
-    this.setState({nodeConfigVisible: false});
+    this.setState({nodeConfigVisible: false, nodeInfo: nodeInfo});
+
+    history.push('/');
   }
   render() {
+    var defaultTrigger = <Button type="primary" className="btrigger"  onClick={this.openSetDialog.bind(this)}><Icon type="set" />设置节点</Button>;
     const { profile, isMobile, theme, width, className, style } = this.props;
     return (
       <Layout.Header
@@ -59,7 +70,10 @@ export default class Header extends PureComponent {
           className="ice-design-layout-header-menu"
           style={{ display: 'flex' }}
         >
-        <Button type="primary" onClick={this.openSetDialog.bind(this)}><Icon type="set" />设置节点</Button>
+    
+        <Balloon  trigger={defaultTrigger} closable={false}>
+            当前连接的节点:{this.state.nodeInfo}
+        </Balloon>
         <Dialog
           visible={this.state.nodeConfigVisible}
           title="配置节点"

@@ -82,5 +82,6 @@
   "engines": {
     "node": ">=8.0.0"
   },
-  "title": "fractal"
+  "title": "fractal",
+  "proxyConfig": {}
 }
