@@ -26,7 +26,7 @@ import TableDisplay from './pages/TableDisplay';
 import Performance from './pages/Performance';
 import AccountManager from './pages/AccountManager';
 import KeystoreManager from './pages/KeystoreManager';
-import ContractManager from './pages/ContractManager'
+import ContractManager from './pages/ContractManager';
 
 import Configure from './pages/Configure';
 import NotFound from './pages/NotFound';

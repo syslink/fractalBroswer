@@ -83,27 +83,8 @@ const asideMenuConfig = [
         name: '资产搜索',
         path: '/assetSearch',
       },
-      // {
-      //   name: '资产操作',
-      //   path: '/assetOperator',
-      // },
     ],
   },
-  // {
-  //   name: 'Contract Manager',
-  //   path: '/result',
-  //   icon: 'result',
-  //   children: [
-  //     {
-  //       name: 'Contract Editor',
-  //       path: '/contractManager',
-  //     },
-  //     {
-  //       name: 'Contract Viewer',
-  //       path: '/result/fail',
-  //     },
-  //   ],
-  // },
 ];
 
 export { headerMenuConfig, asideMenuConfig };
