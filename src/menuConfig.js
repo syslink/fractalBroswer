@@ -3,20 +3,19 @@
 // asideMenuConfig：侧边导航配置
 
 const headerMenuConfig = [
-  {
-    name: 'feedback',
-    path: '',
-    external: true,
-    newWindow: true,
-    icon: 'message',
-  },
-  {
-    name: 'help',
-    path: '',
-    external: true,
-    newWindow: true,
-    icon: 'bangzhu',
-  },
+  // {
+  //   name: 'feedback',
+  //   path: '',
+  //   external: true,
+  //   newWindow: true,
+  //   icon: 'message',
+  // },
+  // {
+  //   name: '设置节点',
+  //   path: '',
+  //   external: true,
+  //   icon: 'tool',
+  // },
 ];
 
 const asideMenuConfig = [
@@ -84,10 +83,10 @@ const asideMenuConfig = [
         name: '资产搜索',
         path: '/assetSearch',
       },
-      {
-        name: '资产操作',
-        path: '/assetOperator',
-      },
+      // {
+      //   name: '资产操作',
+      //   path: '/assetOperator',
+      // },
     ],
   },
   // {

@@ -340,7 +340,7 @@ const styles = {
     marginBottom: '3px',
   },
   smallCount: {
-    fontSize: '12px',
+    fontSize: '14px',
     fontWeight: 'bold',
     marginBottom: '3px',
   },

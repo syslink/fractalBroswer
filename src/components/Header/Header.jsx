@@ -1,6 +1,6 @@
 /* eslint jsx-a11y/no-noninteractive-element-interactions:0 */
 import React, { PureComponent } from 'react';
-import { Balloon, Icon } from '@icedesign/base';
+import { Balloon, Icon, Input, Dialog, Feedback, Search } from '@icedesign/base';
 import IceImg from '@icedesign/img';
 import Layout from '@icedesign/layout';
 import Menu from '@icedesign/menu';
@@ -9,9 +9,43 @@ import cx from 'classnames';
 import { Link } from 'react-router-dom';
 import { headerMenuConfig } from '../../menuConfig';
 import Logo from '../Logo';
-import { Search } from '@icedesign/base';
+import { Tag, Button } from '@alifd/next';
+import cookie from 'react-cookies'
+import axios from 'axios';
 
 export default class Header extends PureComponent {
+
+  constructor(props) {
+    super(props);
+    this.state = {
+        nodeConfigVisible: false,
+        ip: '127.0.0.1',
+        port: 8545
+    };
+  }
+  openSetDialog = () => {
+    this.setState({nodeConfigVisible: true});
+  }
+  handleIPChange = (v) => {
+    this.state.ip = v;
+  }
+  handlePortChange = (v) => {
+    this.state.port = v;
+  }
+  onConfigNodeOK = () => {
+    if (this.state.ip == '') {
+      Feedback.toast.error('请输入IP地址');
+      return;
+    }
+    if (this.state.port == '') {
+      Feedback.toast.error('请输入端口');
+      return;
+    }
+    var nodeInfo = "http://" + this.state.ip + ":" + this.state.port;
+    cookie.save("nodeInfo", nodeInfo);
+    axios.defaults.baseURL = nodeInfo;
+    this.setState({nodeConfigVisible: false});
+  }
   render() {
     const { profile, isMobile, theme, width, className, style } = this.props;
     return (
@@ -25,6 +59,40 @@ export default class Header extends PureComponent {
           className="ice-design-layout-header-menu"
           style={{ display: 'flex' }}
         >
+        <Button type="primary" onClick={this.openSetDialog.bind(this)}><Icon type="set" />设置节点</Button>
+        <Dialog
+          visible={this.state.nodeConfigVisible}
+          title="配置节点"
+          footerActions='ok'
+          footerAlign='center'
+          closeable='true'
+          onOk={this.onConfigNodeOK.bind(this)}
+          onCancel={() => this.setState({nodeConfigVisible: false})}
+          onClose={() => this.setState({nodeConfigVisible: false})}
+        >
+          <Input hasClear
+            onChange={this.handleIPChange.bind(this)} 
+            style={{ width: 400 }}
+            addonBefore="IP"
+            size="medium"
+            defaultValue=""
+            maxLength={15}
+            hasLimitHint
+          />
+          <br/>
+          <br/>
+          <Input hasClear
+            onChange={this.handlePortChange.bind(this)} 
+            style={{ width: 400 }}
+            addonBefore="RPC端口"
+            size="medium"
+            defaultValue=""
+            maxLength={5}
+            hasLimitHint
+            onPressEnter={this.onConfigNodeOK.bind(this)}
+          />
+        </Dialog> 
+
           {/* <Search
             style={{ fontSize: '12px' }}
             size="large"
