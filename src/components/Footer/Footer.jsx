@@ -19,7 +19,7 @@ export default class Footer extends PureComponent {
             <Logo />
           </div>
           <div className="copyright">
-            © 2018 Theme designed by{' '}
+            © 2019 Theme designed by{' '}
             <a
               href="https://github.com/fractalplatform/fractal"
               target="_blank"

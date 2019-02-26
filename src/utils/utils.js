@@ -85,4 +85,33 @@ function getRouterData(routerConfig, menuConfig) {
   return routerData;
 }
 
-export { getFlatMenuData, getRouterData, formatterMenuData };
+function hex2Bytes(str) {
+  var pos = 0;
+  var len = str.length;
+
+  if(len %2 != 0)
+  {
+      return null; 
+  }
+  if(str[0] == '0' && str[1] == 'x') {
+    pos = 2;
+    len -= 2;
+  }
+  if(len %2 != 0)
+  {
+      return null; 
+  }
+
+  len /= 2;
+  var hexA = new Array();
+  for(var i = 0; i < len; i++)
+  {
+    var s = str.substr(pos, 2);
+    var v = parseInt(s, 16);
+    hexA.push(v);
+    pos += 2;
+  }
+  return hexA;
+}
+
+export { getFlatMenuData, getRouterData, formatterMenuData, hex2Bytes };

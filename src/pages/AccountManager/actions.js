@@ -53,6 +53,12 @@ import {
   TRANSFER_SUCCESS,
   TRANSFER_FAILURE,
 
+  UPDATE_PK_DIALOG_OPEN,
+  UPDATE_PK_DIALOG_CLOSE,
+  UPDATE_PK_REQUEST,
+  UPDATE_PK_SUCCESS,
+  UPDATE_PK_FAILURE,
+
   CLOSE_FAIL_DIALOG,
 
   RPC_REQUEST_FAILURE,
@@ -315,6 +321,41 @@ const transferSuccessAction = (payload) => {
 const transferFailAction = (payload) => {
   return {
     type: TRANSFER_FAILURE,
+    result: payload,
+    isLoading: false,
+  };
+};
+
+const openUpdatePKDialogAction = () => {
+  return {
+    type: UPDATE_PK_DIALOG_OPEN,
+  };
+};
+
+const closeUpdatePKDialogAction = () => {
+  return {
+    type: UPDATE_PK_DIALOG_CLOSE,
+  };
+};
+
+const updatePKRequestAction = () => {
+  return {
+    type: UPDATE_PK_REQUEST,
+    isLoading: true,
+  };
+};
+
+const updatePKSuccessAction = (payload) => {
+  return {
+    type: UPDATE_PK_SUCCESS,
+    result: payload,
+    isLoading: false,
+  };
+};
+
+const updatePKFailAction = (payload) => {
+  return {
+    type: UPDATE_PK_FAILURE,
     result: payload,
     isLoading: false,
   };
@@ -612,6 +653,47 @@ export const transfer = (params) => {
       return response.data;
     } catch (error) {
       dispatch(transferFailAction(error.message));
+    }
+   }
+}
+
+export const openDialogOfUpdatePK = (params) => {
+  return async (dispatch) => {
+    dispatch(openUpdatePKDialogAction());
+  }
+}
+
+export const closeDialogOfUpdatePK = (params) => {
+  return async (dispatch) => {
+    dispatch(closeUpdatePKDialogAction());
+  }
+}
+
+export const updatePK = (params) => {
+  return async (dispatch) => {
+    dispatch(updatePKRequestAction());
+    try {
+      const response = await sendTransaction(params);
+      if (response.status == 200) {
+        if (response.data.result != null) {
+          saveTxHash(params.accountName, params.actionType, response.data.result);
+          dispatch(updatePKSuccessAction(response.data.result));
+          setTimeout(() => {
+            dispatch(getAccountInfo([params.accountName])).then(resp => {
+              if (resp.hasOwnProperty("result")) {
+                dispatch(bindAccountPublicKey([resp.result.accountName]));
+              } 
+            });
+          }, 3000);
+        } else {
+          dispatch(updatePKFailAction(response.data.error.message));
+        }
+      } else {
+        dispatch(updatePKFailAction(response.status));
+      }
+      return response.data;
+    } catch (error) {
+      dispatch(updatePKFailAction(error.message));
     }
    }
 }

@@ -37,16 +37,24 @@ import {
   IMPORT_ACCOUNT_SUCCESS,
   IMPORT_ACCOUNT_FAILURE,
 
+  TRANSFER_DIALOG_OPEN,
+  TRANSFER_DIALOG_CLOSE,
   TRANSFER_DIALOG,
   TRANSFER_REQUEST,
   TRANSFER_SUCCESS,
   TRANSFER_FAILURE,
+
   CREATE_ACCOUNT_BY_SYSTEM_DIALOG_OPEN,
   CREATE_ACCOUNT_BY_SYSTEM_DIALOG_CLOSE,
   CREATE_ACCOUNT_BY_SELF_DIALOG_OPEN,
   CREATE_ACCOUNT_BY_SELF_DIALOG_CLOSE,
-  TRANSFER_DIALOG_OPEN,
-  TRANSFER_DIALOG_CLOSE,
+
+  UPDATE_PK_DIALOG_OPEN,
+  UPDATE_PK_DIALOG_CLOSE,
+  UPDATE_PK_REQUEST,
+  UPDATE_PK_SUCCESS,
+  UPDATE_PK_FAILURE,
+
   CLOSE_FAIL_DIALOG,
 } from './constants';
 
@@ -305,6 +313,29 @@ function accountMgrReducer(state = initialState, action) {
         isLoading: action.isLoading,
         failInfo: action.result,
       });   
+    case	UPDATE_PK_DIALOG_OPEN:
+      return Object.assign({}, state, {
+        updatePKVisible: true,
+      });
+    case	UPDATE_PK_DIALOG_CLOSE:
+      return Object.assign({}, state, {
+        updatePKVisible: false,
+      });
+    case	UPDATE_PK_REQUEST:
+      return Object.assign({}, state, {
+        isLoading: action.isLoading,
+      }); 
+    case	UPDATE_PK_SUCCESS:
+      return Object.assign({}, state, {
+        isLoading: action.isLoading,
+        failInfo: '',
+        updatePKVisible: false,
+      }); 
+    case	UPDATE_PK_FAILURE:  
+      return Object.assign({}, state, {
+        isLoading: action.isLoading,
+        failInfo: action.result,
+      });  
     default:
       return state;
   }

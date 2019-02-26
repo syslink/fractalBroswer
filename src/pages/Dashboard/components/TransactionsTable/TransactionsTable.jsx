@@ -6,7 +6,11 @@ import eventProxy from '../../../../utils/eventProxy';
 import {  getBlockByNum } from '../../../../api';
 import {getAssetInfo, getTransactionReceipt} from '../../../../api'
 
+import {decode} from 'rlp'
 import BigNumber from "bignumber.js"
+import { hex2Bytes } from '../../../../utils/utils';
+import * as txParser from '../../../../utils/transactionParser';
+import * as actionTypes from '../../../../utils/constant';
 
 export default class TransactionsTable extends Component {
   static displayName = 'TransactionsTable';
@@ -40,27 +44,83 @@ export default class TransactionsTable extends Component {
       var curBlockInfo = resp.data.result; 
       var transactions = [];
       for (let transaction of curBlockInfo.transactions) {
+        txParser.parseAction(transaction, )
+
         var actionInfo = transaction.actions[0];
+        
         if (this.state.assetInfos[actionInfo.assetID] == undefined) {
           var resp = await getAssetInfo([actionInfo.assetID]);
           this.state.assetInfos[actionInfo.assetID] = resp.data.result;
         }
+        var payloadInfo = '';
+        if (actionInfo.payload.length > 2) {
+          payloadInfo = decode(hex2Bytes(actionInfo.payload))
+        }
         switch(actionInfo.type) {
-          case 0:
+          case actionTypes.TRANSFER:
             transaction['actionType'] = '转账';
             transaction['detailInfo'] = actionInfo.from + "向" + actionInfo.to + "转账" 
                                 + this.getReadableNumber(actionInfo.value, actionInfo.assetID) + this.state.assetInfos[actionInfo.assetID].symbol;
             break;
-          case 256:
+          case actionTypes.CREATE_NEW_ACCOUNT:
             transaction['actionType'] = '创建账户';
             transaction['detailInfo'] = actionInfo.from + "创建账户：" + actionInfo.to;
             if (actionInfo.value > 0) {
               transaction['detailInfo'] += "并转账" + this.getReadableNumber(actionInfo.value, actionInfo.assetID) + assetInfos[actionInfo.assetID].symbol;
             }     
             break;   
-          case 257:  
+          case actionTypes.UPDATE_ACCOUNT:  
             transaction['actionType'] = '更新账户';
-            transaction['detailInfo'] = "更新账户";
+            transaction['detailInfo'] = payloadInfo;
+            break;
+          case actionTypes.INCREASE_ASSET:
+            transaction['actionType'] = '增发资产';
+            transaction['detailInfo'] = payloadInfo;
+            break;
+          case actionTypes.ISSUE_ASSET:
+            transaction['actionType'] = '发行资产';
+            transaction['detailInfo'] = payloadInfo;
+            break;
+          case actionTypes.DESTORY_ASSET:
+            transaction['actionType'] = '销毁资产';
+            transaction['detailInfo'] = payloadInfo;
+            break;
+          case actionTypes.SET_ASSET_OWNER:
+            transaction['actionType'] = '设置资产所有者';
+            transaction['detailInfo'] = payloadInfo;
+            break;
+          case actionTypes.SET_ASSET_FOUNDER:
+            transaction['actionType'] = '设置资产创建者';
+            transaction['detailInfo'] = payloadInfo;
+            break;
+          case actionTypes.REG_PRODUCER:
+            transaction['actionType'] = '注册生产者';
+            transaction['detailInfo'] = payloadInfo;
+            break;
+          case actionTypes.UPDATE_PRODUCER:
+            transaction['actionType'] = '更新生产者';
+            transaction['detailInfo'] = payloadInfo;
+            break;
+          case actionTypes.UNREG_PRODUCER:
+            transaction['actionType'] = '注销生产者';
+            transaction['detailInfo'] = payloadInfo;
+            break;
+          case actionTypes.REMOVE_VOTER:
+            transaction['actionType'] = '移除投票者';
+            transaction['detailInfo'] = payloadInfo;
+            break;
+          case actionTypes.VOTE_PRODUCER:
+            transaction['actionType'] = '给生产者投票';
+            transaction['detailInfo'] = payloadInfo;
+            break;
+          case actionTypes.CHANGE_PRODUCER:
+            transaction['actionType'] = '改投生产者';
+            transaction['detailInfo'] = payloadInfo;
+            break;
+          case actionTypes.UNVOTE_PRODUCER:
+            transaction['actionType'] = '收回投票';
+            transaction['detailInfo'] = payloadInfo;
+            break;
         }
 
         var receiptResp = await getTransactionReceipt([transaction.txHash]);

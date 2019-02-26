@@ -19,16 +19,25 @@ export default class BasicLine extends Component {
   componentDidMount() {
   	// 监听 msg 事件
     eventProxy.on('txInfos', (msg) => {
+
       this.setState({
-        txInfos: msg
+        txInfos: msg.slice(msg.length > 10 ? -10 : 0),
       });
     });
   }
 
   render() {
-    
+    var minTxNum = 10000000;
+    this.state.txInfos.map((item) => {
+      if (item.txNum < minTxNum) {
+        minTxNum = item.txNum;
+      }
+    });
+    if (minTxNum > 10) {
+      minTxNum -= 10;
+    }
     const cols = {
-      txNum: { min: 1000 },
+      txNum: { min: 0 },
       blockHeight: { range: [0, 1] },
     };
 

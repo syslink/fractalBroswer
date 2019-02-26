@@ -27,7 +27,7 @@ export default class TabChart extends Component {
       <div className="tab-chart" style={styles.container}>
         <IceContainer style={styles.card}>
           <Tab onChange={this.handleChange}>
-            <TabPane key="2" tab="交易量趋势(K)">
+            <TabPane key="2" tab="交易量趋势">
               <BasicLine />
             </TabPane>
           </Tab>

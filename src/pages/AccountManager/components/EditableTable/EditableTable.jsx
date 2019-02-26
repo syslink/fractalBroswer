@@ -12,8 +12,9 @@ import { bindAccountAddr, deleteBoundInfo, updateBoundInfo,
          getBoundInfo, getKeystore, createAccountBySystem, 
          getAccountInfo, createAccountBySelf, importAccount, transfer,
          openDialogOfCreateAccountBySelf, openDialogOfCreateAccountBySystem, openDialogOfTransfer, openDialogOfImportAccount,
-         closeDialogOfCreateAccountBySelf, closeDialogOfCreateAccountBySystem, closeDialogOfTransfer, closeFailDialog, closeDialogOfImportAccount } from '../../actions';
-import {TRANSFER, CREATE_NEW_ACCOUNT, UPDATE_ACCOUNT} from '../../constants'
+         closeDialogOfCreateAccountBySelf, closeDialogOfCreateAccountBySystem, closeDialogOfTransfer, closeFailDialog, closeDialogOfImportAccount,
+         openDialogOfUpdatePK, closeDialogOfUpdatePK, updatePK } from '../../actions';
+import {TRANSFER, CREATE_NEW_ACCOUNT, UPDATE_ACCOUNT} from '../../../../utils/constant'
 import {getAssetInfo, getSuggestionGasPrice, getTransactionByHash, getTransactionReceipt, sendTransaction} from '../../../../api'
 
 import reducer from '../../reducer';
@@ -92,7 +93,7 @@ class EditableTable extends Component {
 
   showAssets = async (index) => {
     const _this = this;
-    this.state.curAccount = this.props.accountInfos[index].accountName;
+    this.state.curAccount = this.props.accountInfos[index];
     var balances = this.props.accountInfos[index].balances;
     for (let balance of balances) {
       if (_this.state.assetInfos[balance.assetID] == undefined) {
@@ -119,7 +120,7 @@ class EditableTable extends Component {
 
   showTxs = async (index) => {
     const _this = this;
-    this.state.curAccount = this.props.accountInfos[index].accountName;
+    this.state.curAccount = this.props.accountInfos[index];
     for (let balance of this.props.accountInfos[index].balances) {
       if (this.state.assetInfos[balance.assetID] == undefined) {
         var resp = await getAssetInfo([balance.assetID]);
@@ -128,7 +129,7 @@ class EditableTable extends Component {
     }
 
     let {assetInfos} = this.state;
-    var txInfoSet = cookie.load(this.state.curAccount);
+    var txInfoSet = cookie.load(this.state.curAccount.accountName);
     if (txInfoSet != undefined) {
       var txInfos = [];
       for (let txInfo of txInfoSet) {
@@ -164,19 +165,6 @@ class EditableTable extends Component {
       });
     }
   }
-  updatePublicKey = async (index) => {
-    var accountInfo = this.props.accountInfos[index];
-    var rlpData = encode(["syslink001", accountInfo.chargeRatio, '0x04eee9a993f914da55d8b38211e2ca479be22b2e7ad9c15bb467e570ed6b810f648bf1d041b0979a2a825ea91cc1475f00fb75327851a6603e7f7e71ca918443ef'])
-    var params = {
-      accountName: this.props.accountInfos[index].accountName,
-      actionType: UPDATE_ACCOUNT,
-      data: '0x' + rlpData.toString('hex'),
-      password: 'syslink',
-    };
-
-    var txResp = await sendTransaction(params);
-    console.log(txResp);
-  }
   renderOperation = (value, index) => {
     return (
       <view>
@@ -191,13 +179,50 @@ class EditableTable extends Component {
         <Button type="primary" onClick={this.showTxs.bind(this, index)}>
           查看交易
         </Button>
-        {/* &nbsp;&nbsp;
+        &nbsp;&nbsp;
         <Button type="primary" onClick={this.updatePublicKey.bind(this, index)}>
           更换公钥
-        </Button> */}
+        </Button>
       </view>
     );
   };
+
+
+  updatePublicKey = (index) => {
+
+    this.state.curAccount = this.props.accountInfos[index];
+    this.props.openDialogOfUpdatePK();
+  }
+
+  onUpdatePKOK = (index) => {
+    if (this.state.selfPublicKey == '' && this.state.otherPublicKey == '') {
+      Feedback.toast.error("请选择或输入公钥");
+      return;
+    }
+    if (this.state.password == '') {
+      Feedback.toast.error("请输入密码");
+      return;
+    }
+    var publicKey = this.state.otherPublicKey;
+    if (publicKey == '') {
+      publicKey = this.state.selfPublicKey;
+    }
+
+    var founder = this.state.curAccount.founder;
+    if (founder == '') {
+      founder = this.state.curAccount.accountName;
+    }
+
+    var rlpData = encode([founder, this.state.curAccount.chargeRatio, publicKey])
+    var params = {
+      accountName: this.state.curAccount.accountName,
+      actionType: UPDATE_ACCOUNT,
+      data: '0x' + rlpData.toString('hex'),
+      password: this.state.password,
+    };
+
+    this.props.updatePK(params);
+  }
 
   transfer = async (index) => {
     var assetID = this.state.balanceInfos[index].assetID;
@@ -372,7 +397,7 @@ class EditableTable extends Component {
     }
 
     var transferInfo = {"actionType": TRANSFER, 
-                        "accountName": this.state.curAccount, 
+                        "accountName": this.state.curAccount.accountName, 
                         "toAccountName":this.state.transferToAccount, 
                         "assetId": this.state.curTransferAsset.assetid, 
                         "gasLimit": new BigNumber(this.state.gasLimit).toNumber(), 
@@ -501,12 +526,12 @@ class EditableTable extends Component {
               dataIndex='publicKey'
             />
             <Table.Column
-              width={120}
+              width={100}
               title="是否有效"
               dataIndex='valid'
               cell={this.renderValid}
             />
-            <Table.Column title="操作" width={300} cell={this.renderOperation} />
+            <Table.Column title="操作" width={350} cell={this.renderOperation} />
           </Table>
           <div onClick={this.addAccountBySystem.bind(this)} style={styles.addNewItem}>
             + 新增账户(第三方免费帮您创建)
@@ -636,6 +661,61 @@ class EditableTable extends Component {
           <br />
           (以上两种公钥二选一即可)
         </Dialog>
+
+        <Dialog
+          visible={this.props.updatePKVisible}
+          onOk={this.onUpdatePKOK.bind(this)}
+          onCancel={() => this.props.closeDialogOfUpdatePK()}
+          onClose={() => this.props.closeDialogOfUpdatePK()}
+          title="更新公钥"
+          footerAlign='center'
+        >
+          <Select
+            style={{width: 400}}
+            placeholder="选择绑定本地已有公钥或在下面输入其它公钥"
+            onChange={this.handleSelfPublicKeyChange.bind(this)}
+            //dataSource={}
+          >
+            {
+              this.props.keystoreInfo.map((keystore) => {
+                return (
+                  <Select.Option value={keystore.publicKey} lable={keystore.publicKey} 
+                                 disabled={this.state.curAccount.publicKey == keystore.publicKey}>
+                    {keystore.publicKey}
+                  </Select.Option>
+                )
+              }, this)
+            }
+          </Select>
+          <br />
+          <br />
+          <Input hasClear
+            onChange={this.handleOthersPublicKeyChange.bind(this)} 
+            style={{ width: 400 }}
+            addonBefore="其它公钥"
+            size="medium"
+            defaultValue=""
+            maxLength={67}
+            hasLimitHint
+            placeholder="若此处填入公钥，创建时将以此公钥为准"
+          />
+          <br />
+          (以上两种公钥二选一即可)
+          <br />
+          <br />
+          <Input hasClear
+            htmlType="password"
+            onChange={this.handlePasswordChange.bind(this)} 
+            style={{ width: 400 }}
+            addonBefore="密码"
+            size="medium"
+            defaultValue=""
+            maxLength={20}
+            hasLimitHint
+            placeholder="此密码与账户绑定的公私钥相对应"
+          />
+        </Dialog>
+
         <Dialog
           visible={this.state.msgVisible}
           title="通知"
@@ -843,6 +923,9 @@ const mapDispatchToProps = {
   closeFailDialog,
   openDialogOfImportAccount,
   closeDialogOfImportAccount,
+  openDialogOfUpdatePK, 
+  closeDialogOfUpdatePK, 
+  updatePK
 };
 
 
@@ -869,6 +952,7 @@ const mapStateToProps = (state) => {
     systemHelpVisible: state.accountManager.systemHelpVisible,
     transferVisible: state.accountManager.transferVisible,
     importAccountVisible: state.accountManager.importAccountVisible,
+    updatePKVisible: state.accountManager.updatePKVisible,
   };
 };
 
