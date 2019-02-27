@@ -1,4 +1,5 @@
 export const TRANSFER = 0;
+export const CREATE_CONTRACT = 1;
 
 export const CREATE_NEW_ACCOUNT = 256;
 export const UPDATE_ACCOUNT = 257;

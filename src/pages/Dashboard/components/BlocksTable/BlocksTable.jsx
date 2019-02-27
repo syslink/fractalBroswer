@@ -5,6 +5,7 @@ import IceContainer from '@icedesign/container';
 
 import eventProxy from '../../../../utils/eventProxy';
 import {  getBlockByNum } from '../../../../api';
+import BigNumber from "bignumber.js"
 
 export default class BlocksTable extends Component {
   static displayName = 'BlocksTable';
@@ -39,6 +40,9 @@ export default class BlocksTable extends Component {
     <Progress showInfo={false} percent={parseInt(value, 10)} />
   );
 
+  renderSize = value => {
+
+  }
   render() {
     return (
       <div className="progress-table">
@@ -50,6 +54,7 @@ export default class BlocksTable extends Component {
             <Table.Column title="Hash" dataIndex="hash" width={200} />
             <Table.Column title="交易数" dataIndex="txn" width={100} />
             <Table.Column title="Gas消耗" dataIndex="gasUsed" width={100} />
+            <Table.Column title="区块大小(B)" dataIndex="size" width={100}/>
             <Table.Column title="生产者" dataIndex="miner" width={100} />
             
           </Table>

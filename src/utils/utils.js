@@ -114,4 +114,16 @@ function hex2Bytes(str) {
   return hexA;
 }
 
-export { getFlatMenuData, getRouterData, formatterMenuData, hex2Bytes };
+function bytes2Hex(array) {
+  var hexStr = '0x';
+  array.map((item) => {
+    var hex = item.toString(16);
+    if (hex.length == 1) {
+      hex = '0' + hex;
+    }
+    hexStr += hex;
+  });
+  return hexStr;
+}
+
+export { getFlatMenuData, getRouterData, formatterMenuData, hex2Bytes, bytes2Hex };
