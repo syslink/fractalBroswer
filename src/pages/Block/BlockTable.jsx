@@ -5,7 +5,7 @@ import {getBlockByNum, getBlockByHash} from '../../api'
 
 import { Table, Pagination, Feedback } from '@icedesign/base';
 import BigNumber from "bignumber.js"
-import {getAssetInfo, getTransactionReceipt} from '../../api'
+import {getAssetInfoById, getTransactionReceipt} from '../../api'
 const { Row, Col } = Grid;
 
 export default class BlockTable extends Component {
@@ -51,7 +51,7 @@ export default class BlockTable extends Component {
       for (let transaction of curBlockInfo.transactions) {
         var actionInfo = transaction.actions[0];
         if (this.state.assetInfos[actionInfo.assetID] == undefined) {
-          var resp = await getAssetInfo([actionInfo.assetID]);
+          var resp = await getAssetInfoById([actionInfo.assetID]);
           this.state.assetInfos[actionInfo.assetID] = resp.data.result;
         }
         switch(actionInfo.type) {

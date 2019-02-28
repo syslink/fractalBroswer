@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
 import { Search, Grid, Table } from "@icedesign/base";
 import IceContainer from '@icedesign/container';
-import {getAssetInfo, getTransactionByHash, getTransactionReceipt} from '../../api'
+import {getAssetInfoById, getTransactionByHash, getTransactionReceipt} from '../../api'
 
 const { Row, Col } = Grid;
 

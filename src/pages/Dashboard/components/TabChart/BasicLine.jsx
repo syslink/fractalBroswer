@@ -20,8 +20,12 @@ export default class BasicLine extends Component {
   	// 监听 msg 事件
     eventProxy.on('txInfos', (msg) => {
 
+      var minBlockHeight = msg[0].blockHeight;
+      var maxBlockHeight = msg[msg.length - 1].blockHeight;
       this.setState({
         txInfos: msg.slice(msg.length > 10 ? -10 : 0),
+        minBlockHeight: minBlockHeight,
+        maxBlockHeight: maxBlockHeight,
       });
     });
   }
@@ -37,8 +41,12 @@ export default class BasicLine extends Component {
       minTxNum -= 10;
     }
     const cols = {
-      txNum: { min: 0 },
-      blockHeight: { range: [0, 1] },
+      txNum: { min: 0, alias: "交易数" },
+      blockHeight: { min: this.state.minBlockHeight, 
+                     max: this.state.maxBlockHeight, 
+                     tickInterval: 100, 
+                     range: [0, 1],
+                     alias: '区块'},
     };
 
     return (

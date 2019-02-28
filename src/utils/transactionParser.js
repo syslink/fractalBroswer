@@ -3,7 +3,7 @@ import BigNumber from "bignumber.js"
 
 import * as actionTypes from './constant';
 import { hex2Bytes, bytes2Hex } from './utils';
-import {getAssetInfo} from '../api'
+import {getAssetInfoById} from '../api'
 
 
 function getReadableNumber(value, assetDecimal) {
@@ -56,7 +56,7 @@ function parseAction(actionInfo, assetInfo){
         amount = this.getReadableNumber(amount, assetInfo.decimals);
       } 
       // else {
-      //   var resp = await getAssetInfo([assetID]);
+      //   var resp = await getAssetInfoById([assetID]);
       //   assetInfo = resp.data.result;
       //   amount = this.getReadableNumber(amount, assetInfo.decimals);
       // }

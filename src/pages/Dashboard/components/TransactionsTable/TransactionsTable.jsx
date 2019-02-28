@@ -4,7 +4,7 @@ import { Table, Progress, Pagination } from '@icedesign/base';
 import IceContainer from '@icedesign/container';
 import eventProxy from '../../../../utils/eventProxy';
 import {  getBlockByNum } from '../../../../api';
-import {getAssetInfo, getTransactionReceipt} from '../../../../api'
+import {getAssetInfoById, getTransactionReceipt} from '../../../../api'
 
 import {decode} from 'rlp'
 import BigNumber from "bignumber.js"
@@ -51,7 +51,7 @@ export default class TransactionsTable extends Component {
           var actionResults = receiptResp.data.result.actionResults;
           for (let actionInfo of transaction.actions) {
             if (_this.state.assetInfos[actionInfo.assetID] == undefined) {
-              var resp = await getAssetInfo([actionInfo.assetID]);
+              var resp = await getAssetInfoById([actionInfo.assetID]);
               _this.state.assetInfos[actionInfo.assetID] = resp.data.result;
             }
             var parsedAction = txParser.parseAction(actionInfo, _this.state.assetInfos[actionInfo.assetID]);

@@ -138,9 +138,20 @@ export async function getDposIrreversibleInfo(params) {
   });
 }
 
-export async function getAssetInfo(params) {
+export async function getAssetInfoById(params) {
   var dataToSrv = JSON.stringify({"jsonrpc": "2.0", 
                                   "method": "account_getAssetInfoByID", 
+                                  "params": params,
+                                  "id": 1});
+  return axios({
+    method: 'post',
+    data: dataToSrv,
+  });
+}
+
+export async function getAssetInfoByName(params) {
+  var dataToSrv = JSON.stringify({"jsonrpc": "2.0", 
+                                  "method": "account_getAssetInfoByName", 
                                   "params": params,
                                   "id": 1});
   return axios({
@@ -226,6 +237,27 @@ export async function getAccountInfo(params) {
     data: dataToSrv,
   });
 }
+export async function isAccountExist(params) {
+  var dataToSrv = JSON.stringify({"jsonrpc": "2.0", 
+                                  "method": "account_accountIsExist", 
+                                  "params": params,
+                                  "id": 1});
+  return axios({
+    method: 'post',
+    data: dataToSrv,
+  });
+}
+
+export async function getBoundInfo(params) {
+  var dataToSrv = JSON.stringify({"jsonrpc": "2.0", 
+                                    "method": "keystore_getAccountsByPublicKeys", 
+                                    "params": params,
+                                    "id": 1});
+  return axios({
+    method: 'post',
+    data: dataToSrv,
+  });
+}
 
 export default {
   getCurrentBlock,
@@ -243,4 +275,5 @@ export default {
   sendTransaction,
   getValidateEpchoInfo,
   getAccountInfo,
+  getBoundInfo
 };

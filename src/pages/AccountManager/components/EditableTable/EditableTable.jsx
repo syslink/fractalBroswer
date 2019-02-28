@@ -15,7 +15,7 @@ import { bindAccountAddr, deleteBoundInfo, updateBoundInfo,
          closeDialogOfCreateAccountBySelf, closeDialogOfCreateAccountBySystem, closeDialogOfTransfer, closeFailDialog, closeDialogOfImportAccount,
          openDialogOfUpdatePK, closeDialogOfUpdatePK, updatePK } from '../../actions';
 import {TRANSFER, CREATE_NEW_ACCOUNT, UPDATE_ACCOUNT} from '../../../../utils/constant'
-import {getAssetInfo, getSuggestionGasPrice, getTransactionByHash, getTransactionReceipt, sendTransaction} from '../../../../api'
+import {getAssetInfoById, getSuggestionGasPrice, getTransactionByHash, getTransactionReceipt, sendTransaction} from '../../../../api'
 
 import reducer from '../../reducer';
 
@@ -97,7 +97,7 @@ class EditableTable extends Component {
     var balances = this.props.accountInfos[index].balances;
     for (let balance of balances) {
       if (_this.state.assetInfos[balance.assetID] == undefined) {
-        var resp = await getAssetInfo([balance.assetID]);
+        var resp = await getAssetInfoById([balance.assetID]);
         _this.state.assetInfos[balance.assetID] = resp.data.result;
       }
     }
@@ -123,7 +123,7 @@ class EditableTable extends Component {
     this.state.curAccount = this.props.accountInfos[index];
     for (let balance of this.props.accountInfos[index].balances) {
       if (this.state.assetInfos[balance.assetID] == undefined) {
-        var resp = await getAssetInfo([balance.assetID]);
+        var resp = await getAssetInfoById([balance.assetID]);
         this.state.assetInfos[balance.assetID] = resp.data.result;
       }
     }
@@ -485,7 +485,7 @@ class EditableTable extends Component {
       return assetInfo.symbol;
     }
     var _this = this;
-    getAssetInfo([value]).then(resp => {
+    getAssetInfoById([value]).then(resp => {
       _this.state.assetInfos[value] = resp.data.result;
       _this.setState({
         assetInfos: _this.state.assetInfos,

@@ -83,6 +83,10 @@ const asideMenuConfig = [
         name: '资产搜索',
         path: '/assetSearch',
       },
+      {
+        name: '资产操作',
+        path: '/assetOperator',
+      },
     ],
   },
 ];

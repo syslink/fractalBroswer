@@ -2,7 +2,7 @@ import React, { Component } from 'react';
 import { Table, Pagination, Search, Grid, Feedback } from '@icedesign/base';
 import IceContainer from '@icedesign/container';
 import TableFilter from './TableFilter';
-import {getAccountInfo, getAssetInfo} from '../../api'
+import {getAccountInfo, getAssetInfoById} from '../../api'
 import BigNumber from "bignumber.js"
 const { Row, Col } = Grid;
 
@@ -54,7 +54,7 @@ export default class SearchTable extends Component {
     if (response.data.hasOwnProperty("result") && response.data.result != null) {
       var assetBalances = response.data.result.balances;
       for (let assetBalance of assetBalances) {
-        var resp = await getAssetInfo([assetBalance.assetID]);
+        var resp = await getAssetInfoById([assetBalance.assetID]);
         this.state.assetInfos[assetBalance.assetID] = resp.data.result;
         var readableValue = this.getReadableNumber(assetBalance.balance, assetBalance.assetID);
         assetBalance.balance = readableValue + ' ' + resp.data.result.symbol + '    [' + assetBalance.balance + ']';
@@ -83,7 +83,7 @@ export default class SearchTable extends Component {
     if (this.state.assetInfos[assetId] != undefined) {
       this.setState({assetInfo: [this.state.assetInfos[assetId]]});
     } else {
-      var resp = await getAssetInfo([parseInt(assetId)]);
+      var resp = await getAssetInfoById([parseInt(assetId)]);
       if (resp.data.hasOwnProperty("result") && resp.data.result != null) {
         this.setState({assetInfo: [resp.data.result]});
       } if (resp.data.hasOwnProperty("result") && resp.data.result == null) {

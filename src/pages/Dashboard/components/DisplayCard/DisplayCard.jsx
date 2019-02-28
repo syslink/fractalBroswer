@@ -8,12 +8,8 @@ import { getLatestBlock, getTransactionsNum } from './actions';
 import reducer from './reducer';
 import { connect } from 'react-redux';
 import { compose } from 'redux';
-import {  getCurrentBlock, getBlockByHash, getBlockByNum,
-          getTransactionByHash, getTransactionReceipt, 
-          getTxNumByBlockHash, getTxNumByBlockNum,
-          getTotalTxNumByBlockHash, getTotalTxNumByBlockNum,
-          getProducers, getDposAccountInfo, getDposIrreversibleInfo,
-          getValidateEpchoInfo, getLatestEpchoInfo} from '../../../../api';
+import {  getCurrentBlock, getTotalTxNumByBlockNum,
+          getProducers, getDposIrreversibleInfo, getLatestEpchoInfo} from '../../../../api';
 import eventProxy from '../../../../utils/eventProxy';
 const { Row, Col } = Grid;
 
@@ -69,6 +65,10 @@ class BlockTxLayout extends Component {
     var maxSpan = oneHour / blockInterval;
     //var txNums = this.caculateTxNums(curHeight, intervalTime / blockInterval, oneHour / blockInterval);
 
+    if (this.state.txInfos.length > 10) {
+      this.state.txInfos = this.state.txInfos.slice(this.state.txInfos.length - 10);
+    }
+
     var lastMaxHeight = 0;
     if (this.state.txInfos.length > 0) {
       lastMaxHeight = this.state.txInfos[this.state.txInfos.length - 1].blockHeight;
@@ -76,13 +76,14 @@ class BlockTxLayout extends Component {
     var totalNum = 0;
     var maxTxNum = 0;
     for (var fromHeigth = curHeight - maxSpan + interval; fromHeigth <= curHeight;) {
-      if (fromHeigth <= lastMaxHeight) {
+      if (fromHeigth <= lastMaxHeight + interval) {
         fromHeigth = fromHeigth + interval;
         continue;
       }
       var resp = await getTotalTxNumByBlockNum([fromHeigth, interval]);
       var txNum = resp.data.result;
       this.state.txInfos.push({blockHeight:fromHeigth, txNum:txNum});
+      console.log("new txInfos = " + fromHeigth + '->' + txNum);
       totalNum += txNum;
       if (txNum > maxTxNum) {
         maxTxNum = txNum;
