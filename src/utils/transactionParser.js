@@ -26,7 +26,7 @@ function parseAction(actionInfo, assetInfo, allAssetInfos, dposInfo){
     console.log(actionInfo.payload);
     payloadInfo = decode(actionInfo.payload);
   }
-  var readableNum = this.getReadableNumber(actionInfo.value, assetInfo.decimals);
+  var readableNum = getReadableNumber(actionInfo.value, assetInfo.decimals);
   switch(actionInfo.type) {
     case actionTypes.TRANSFER:
       actionParseInfo['actionType'] = '转账';
@@ -57,7 +57,7 @@ function parseAction(actionInfo, assetInfo, allAssetInfos, dposInfo){
       var assetId = payloadInfo[0][0];
       var amount = bytes2Number(payloadInfo[1]).toNumber();
       var addedAssetInfo = allAssetInfos[assetId];
-      amount = this.getReadableNumber(amount, addedAssetInfo.decimals);
+      amount = getReadableNumber(amount, addedAssetInfo.decimals);
       // else {
       //   var resp = await getAssetInfoById([assetID]);
       //   assetInfo = resp.data.result;
@@ -81,8 +81,8 @@ function parseAction(actionInfo, assetInfo, allAssetInfos, dposInfo){
 
       actionParseInfo['detailObj'] = {assetName:assetName, symbol:symbol, amount:amount, decimals:decimals, founder:founder, owner:owner, upperLimit:upperLimit};
 
-      amount = this.getReadableNumber(amount, decimals);
-      upperLimit = this.getReadableNumber(upperLimit, decimals);
+      amount = getReadableNumber(amount, decimals);
+      upperLimit = getReadableNumber(upperLimit, decimals);
 
       actionParseInfo['detailInfo'] = '资产名:' + assetName + ',符号:' + symbol + ',初始发行金额:' + amount + symbol + ',发行上限:' + upperLimit + symbol + ',精度:'
                                     + decimals + '位,创办者账号:' + founder +',管理者账号:' + owner;
@@ -92,7 +92,7 @@ function parseAction(actionInfo, assetInfo, allAssetInfos, dposInfo){
       // var rlpData = encode([assetId, '', '', destroyAmount, 0, '', '', 0, 0]);
       var assetId = payloadInfo[0][0];
       var destroyAmount = bytes2Number(payloadInfo[3]).toNumber();
-      destroyAmount = this.getReadableNumber(destroyAmount, allAssetInfos[assetId].decimals);
+      destroyAmount = getReadableNumber(destroyAmount, allAssetInfos[assetId].decimals);
       actionParseInfo['detailInfo'] = "资产ID:" + assetId + ", 销毁数量:" + destroyAmount;  
       actionParseInfo['detailObj'] = {};
       break;
@@ -117,7 +117,7 @@ function parseAction(actionInfo, assetInfo, allAssetInfos, dposInfo){
       // var rlpData = encode([this.state.url, stake]);
       var url = String.fromCharCode.apply(null, payloadInfo[0]);
       var stake = bytes2Number(payloadInfo[1]).toNumber();
-      stake = this.getReadableNumber(stake, actionTypes.FT_DECIMALS);
+      stake = getReadableNumber(stake, actionTypes.FT_DECIMALS);
       actionParseInfo['detailInfo'] = "URL:" + url + ", 投票数:" + stake;  
       actionParseInfo['detailObj'] = {};
       break;
@@ -126,7 +126,7 @@ function parseAction(actionInfo, assetInfo, allAssetInfos, dposInfo){
        // var rlpData = encode([this.state.url, stake]);
       var url = String.fromCharCode.apply(null, payloadInfo[0]);
       var stake = bytes2Number(payloadInfo[1]).toNumber();
-      stake = this.getReadableNumber(stake, actionTypes.FT_DECIMALS);
+      stake = getReadableNumber(stake, actionTypes.FT_DECIMALS);
       actionParseInfo['detailInfo'] = "URL:" + url + ", 投票数:" + stake;  
       actionParseInfo['detailObj'] = {};
       break;
@@ -148,7 +148,7 @@ function parseAction(actionInfo, assetInfo, allAssetInfos, dposInfo){
 
       var producerName = String.fromCharCode.apply(null, payloadInfo[0]);
       var stake = bytes2Number(payloadInfo[1]).dividedBy(new BigNumber(dposInfo.unitStake)).toNumber();
-      stake = this.getReadableNumber(stake, actionTypes.FT_DECIMALS);
+      stake = getReadableNumber(stake, actionTypes.FT_DECIMALS);
       actionParseInfo['detailInfo'] = "生产者:" + producerName + ", 投票数:" + stake;  
       actionParseInfo['detailObj'] = {};
       break;
