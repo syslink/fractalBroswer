@@ -115,17 +115,17 @@ class EditableTable extends Component {
       balanceInfos: this.props.accountInfos[index].balances,
     });
   }
-  getReadableNumber = (value, assetID) => {
-    let {assetInfos} = this.state;
-    var decimals = assetInfos[assetID].decimals;
+  // getReadableNumber = (value, assetID) => {
+  //   let {assetInfos} = this.state;
+  //   var decimals = assetInfos[assetID].decimals;
 
-    var renderValue = new BigNumber(value);
-    renderValue = renderValue.shiftedBy(decimals * -1);
+  //   var renderValue = new BigNumber(value);
+  //   renderValue = renderValue.shiftedBy(decimals * -1);
     
-    BigNumber.config({ DECIMAL_PLACES: 6 });
-    renderValue = renderValue.toString(10);
-    return renderValue;
-  }
+  //   BigNumber.config({ DECIMAL_PLACES: 6 });
+  //   renderValue = renderValue.toString(10);
+  //   return renderValue;
+  // }
 
   showTxs = async (index) => {
     try {
