@@ -60,7 +60,7 @@ export default class TransactionsTable extends Component {
               _this.state.assetInfos[actionInfo.assetID] = resp.data.result;
             }
             var parsedAction = txParser.parseAction(actionInfo, _this.state.assetInfos[actionInfo.assetID], _this.state.assetInfos, dposInfo);
-            parsedAction['result'] = actionResults[i].status == 1 ? '成功' : '失败（' + actionResults[i] + '）';
+            parsedAction['result'] = actionResults[i].status == 1 ? '成功' : '失败（' + actionResults[i].error + '）';
             parsedAction['gasFee'] = actionResults[i].gasUsed + 'aft';
             parsedAction['fromAccount'] = actionInfo.from;
             parsedAction['gasAllot'] = actionResults[i].gasAllot;
@@ -141,10 +141,7 @@ export default class TransactionsTable extends Component {
     return (
       <div className="progress-table">
         <IceContainer className="tab-card" title="交易">
-          <Table
-            getRowClassName={(record, index) => {
-              return `progress-table-tr progress-table-tr${index}`;
-            }}
+          <Table primaryKey="txHash"
             dataSource={this.state.dataSource}
           >
             <Table.Column title="交易Hash" dataIndex="txHash" width={100} />

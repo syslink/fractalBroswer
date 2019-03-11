@@ -86,7 +86,7 @@ class BlockTxLayout extends Component {
         var resp = await getTotalTxNumByBlockNum([fromHeigth, interval]);
         var txNum = resp.data.result;
         this.state.txInfos.push({blockHeight:fromHeigth, txNum:txNum});
-        console.log("new txInfos = " + fromHeigth + '->' + txNum);
+        //console.log("new txInfos = " + fromHeigth + '->' + txNum);
         totalNum += txNum;
         if (txNum > maxTxNum) {
           maxTxNum = txNum;

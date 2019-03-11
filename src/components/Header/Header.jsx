@@ -20,16 +20,28 @@ export default class Header extends PureComponent {
 
   constructor(props) {
     super(props);
-    this.state = {
-        nodeConfigVisible: false,
-        ip: '127.0.0.1',
-        port: 8545,
-        nodeInfo: "http://127.0.0.1:8545",
-    };
-    var nodeInfo = cookie.load("nodeInfo");
-    if (nodeInfo != null && nodeInfo != '') {
-      this.state.nodeInfo = nodeInfo;
+    var ip = '127.0.0.1';
+    var port = 8545;
+    var chainId = 1;
+    var nodeInfoCookie = cookie.load("nodeInfo");
+
+    if (nodeInfoCookie != null && nodeInfoCookie != '') {
+      var nodeInfos = nodeInfoCookie.split('/')[2].split(':');
+      ip = nodeInfos[0];
+      port = nodeInfos[1];
     }
+
+    var chainIdCookie = cookie.load("chainId");
+    if (chainIdCookie != null && chainIdCookie != '') {
+      chainId = chainIdCookie;
+    }
+    this.state = {
+      nodeConfigVisible: false,
+      ip: ip,
+      port: port,
+      nodeInfo: "http://" + ip + ":" + port,
+      chainId: chainId,
+    };
   }
   openSetDialog = () => {
     this.setState({nodeConfigVisible: true});
@@ -39,6 +51,9 @@ export default class Header extends PureComponent {
   }
   handlePortChange = (v) => {
     this.state.port = v;
+  }
+  handleChainIdChange = (v) => {
+    this.state.chainId = v;
   }
   onConfigNodeOK = () => {
     if (this.state.ip == '') {
@@ -51,8 +66,9 @@ export default class Header extends PureComponent {
     }
     var nodeInfo = "http://" + this.state.ip + ":" + this.state.port;
     cookie.save("nodeInfo", nodeInfo);
+    cookie.save("chainId", this.state.chainId);
     axios.defaults.baseURL = nodeInfo;
-    this.setState({nodeConfigVisible: false, nodeInfo: nodeInfo});
+    this.setState({nodeConfigVisible: false, nodeInfo: nodeInfo, chainId: this.state.chainId});
 
     history.push('/');
   }
@@ -72,7 +88,7 @@ export default class Header extends PureComponent {
         >
     
         <Balloon  trigger={defaultTrigger} closable={false}>
-            当前连接的节点:{this.state.nodeInfo}
+            当前连接的节点:{this.state.nodeInfo}<br/><br/>ChainId:{this.state.chainId}
         </Balloon>
         <Dialog
           visible={this.state.nodeConfigVisible}
@@ -89,7 +105,7 @@ export default class Header extends PureComponent {
             style={{ width: 400 }}
             addonBefore="IP"
             size="medium"
-            defaultValue=""
+            defaultValue={this.state.ip}
             maxLength={15}
             hasLimitHint
           />
@@ -100,7 +116,19 @@ export default class Header extends PureComponent {
             style={{ width: 400 }}
             addonBefore="RPC端口"
             size="medium"
-            defaultValue=""
+            defaultValue={this.state.port}
+            maxLength={5}
+            hasLimitHint
+            onPressEnter={this.onConfigNodeOK.bind(this)}
+          />
+          <br/>
+          <br/>
+          <Input hasClear
+            onChange={this.handleChainIdChange.bind(this)} 
+            style={{ width: 400 }}
+            addonBefore="ChainID"
+            size="medium"
+            defaultValue={this.state.chainId}
             maxLength={5}
             hasLimitHint
             onPressEnter={this.onConfigNodeOK.bind(this)}

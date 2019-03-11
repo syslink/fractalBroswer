@@ -1,5 +1,6 @@
 import axios from 'axios';
 
+import cookie from 'react-cookies'
 
 export async function getCurrentBlock(params) {
   var dataToSrv = JSON.stringify({"jsonrpc": "2.0", 
@@ -217,8 +218,15 @@ export async function getNonce(params) {
 
 export async function sendTransaction(params) {
   var resp = await getNonce([params.accountName]);
+  var chainId = 1;
+  var chainIdCookie = cookie.load("chainId");
+  if (chainIdCookie != null && chainIdCookie != '') {
+    chainId = chainIdCookie;
+  }
+  chainId = parseInt(chainId);
+
   var basicInfo = {"actionType":params.actionType, 
-                   "chainID":1, 
+                   "chainID":chainId, 
                    "gasAssetId":1, 
                    "from":params.accountName, 
                    "to":params.toAccountName == undefined ? '' : params.toAccountName, 
@@ -259,9 +267,15 @@ export async function signTx(params) {
 }
 export async function transfer(params) {
   var resp = await signTx([params]);
+  var chainId = 1;
+  var chainIdCookie = cookie.load("chainId");
+  if (chainIdCookie != null && chainIdCookie != '') {
+    chainId = chainIdCookie;
+  }
+  chainId = parseInt(chainId);
 
   var basicInfo = {"actionType":params.actionType, 
-                   "chainID":1, 
+                   "chainID":chainId, 
                    "gasAssetId":1, 
                    "from":params.accountName, 
                    "to":params.toAccountName == undefined ? '' : params.toAccountName, 

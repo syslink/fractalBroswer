@@ -16,7 +16,10 @@ function getReadableNumber(value, assetDecimal) {
 }
 
 function needParsePayload(actionType) {
-  return actionType != actionTypes.TRANSFER && actionType != actionTypes.CREATE_NEW_ACCOUNT;
+  return actionType != actionTypes.TRANSFER 
+      && actionType != actionTypes.CREATE_NEW_ACCOUNT
+      && actionType != actionTypes.CREATE_CONTRACT
+      && actionType != actionTypes.CALL_CONTRACT;
 }
 
 function parseAction(actionInfo, assetInfo, allAssetInfos, dposInfo){
@@ -164,6 +167,16 @@ function parseAction(actionInfo, assetInfo, allAssetInfos, dposInfo){
       break;
     case actionTypes.UNVOTE_PRODUCER:
       actionParseInfo['actionType'] = '收回投票';
+      actionParseInfo['detailInfo'] = payloadInfo;  // 无
+      actionParseInfo['detailObj'] = {};
+      break;
+    case actionTypes.CREATE_CONTRACT:
+      actionParseInfo['actionType'] = '创建合约';
+      actionParseInfo['detailInfo'] = payloadInfo;  // 无
+      actionParseInfo['detailObj'] = {};
+      break;
+    case actionTypes.CALL_CONTRACT:
+      actionParseInfo['actionType'] = '调用合约';
       actionParseInfo['detailInfo'] = payloadInfo;  // 无
       actionParseInfo['detailObj'] = {};
       break;

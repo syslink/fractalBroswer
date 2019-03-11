@@ -49,6 +49,7 @@ export default class BlocksTable extends Component {
         <IceContainer className="tab-card" title="区块">
           <Table
             dataSource={this.state.dataSource}
+            primaryKey="number"
           >
             <Table.Column title="高度" dataIndex="number" width={100} />
             <Table.Column title="Hash" dataIndex="hash" width={200} />

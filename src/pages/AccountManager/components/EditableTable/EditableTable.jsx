@@ -572,7 +572,9 @@ class EditableTable extends Component {
 
   renderResult = (value, index, record) => {
     var parseActions = record.actions;
+    
     return parseActions.map((item)=>{
+      console.log(item.result);
       var defaultTrigger = <Tag type="normal" size="small">{item.result}</Tag>;
       return <Balloon  trigger={defaultTrigger} closable={false}>{item.result}</Balloon>;
     });
