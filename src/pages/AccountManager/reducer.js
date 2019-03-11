@@ -181,7 +181,6 @@ function accountMgrReducer(state = initialState, action) {
         isLoading: action.isLoading,
       });
     case GET_BOUND_SUCCESS:
-      console.log("state.accountInfos:" + state.accountInfos.length + "--" + state.accountInfos);
       return Object.assign({}, state, {
         isLoading: action.isLoading,
         accountInfos: addAccountInfo(state, action.result),        // 将查询得到的所有的账号信息显示在前端

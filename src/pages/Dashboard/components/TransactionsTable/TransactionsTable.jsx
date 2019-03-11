@@ -3,8 +3,7 @@ import React, { Component } from 'react';
 import { Table, Progress, Pagination } from '@icedesign/base';
 import IceContainer from '@icedesign/container';
 import eventProxy from '../../../../utils/eventProxy';
-import {  getBlockByNum } from '../../../../api';
-import {getAssetInfoById, getTransactionReceipt} from '../../../../api'
+import {getAssetInfoById, getTransactionReceipt, getDposInfo, getBlockByNum } from '../../../../api'
 
 import {decode} from 'rlp'
 import BigNumber from "bignumber.js"
@@ -41,6 +40,12 @@ export default class TransactionsTable extends Component {
       var curHeight = msg;
       var transactions = [];
       var maxLookbackNum = 100;
+      var dposInfo;
+      resp = await getDposInfo();
+      if (resp.data.hasOwnProperty('result') && resp.data.result != null) {
+        dposInfo = resp.data.result;
+      }
+
       for (var height = curHeight; height > curHeight - maxLookbackNum && height > 0; height--) {
         var resp = await getBlockByNum([height, true]);
         var curBlockInfo = resp.data.result; 
@@ -54,9 +59,11 @@ export default class TransactionsTable extends Component {
               var resp = await getAssetInfoById([actionInfo.assetID]);
               _this.state.assetInfos[actionInfo.assetID] = resp.data.result;
             }
-            var parsedAction = txParser.parseAction(actionInfo, _this.state.assetInfos[actionInfo.assetID]);
-            parsedAction['result'] = actionResults[i].status == 1 ? '成功' : '失败（' + actionResult[i] + '）';
+            var parsedAction = txParser.parseAction(actionInfo, _this.state.assetInfos[actionInfo.assetID], _this.state.assetInfos, dposInfo);
+            parsedAction['result'] = actionResults[i].status == 1 ? '成功' : '失败（' + actionResults[i] + '）';
             parsedAction['gasFee'] = actionResults[i].gasUsed + 'aft';
+            parsedAction['fromAccount'] = actionInfo.from;
+            parsedAction['gasAllot'] = actionResults[i].gasAllot;
             parsedActions.push(parsedAction);
             i++;
           }
@@ -75,6 +82,14 @@ export default class TransactionsTable extends Component {
       _this.setState({
         dataSource: _this.state.dataSource.slice(0, 20),
       });
+    });
+  }
+
+  renderFromAccount = (value, index, record) => {
+    var parseActions = record.actions;
+    return parseActions.map((item)=>{
+      var defaultTrigger = <Tag type="normal" size="small">{item.fromAccount}</Tag>;
+      return <Balloon  trigger={defaultTrigger} closable={false}>{item.fromAccount}</Balloon>;
     });
   }
 
@@ -109,7 +124,13 @@ export default class TransactionsTable extends Component {
       return <Balloon  trigger={defaultTrigger} closable={false}>{item.gasFee}</Balloon>;
     });
   }
-
+  renderGasAllot = (value, index, record) => {
+    var parseActions = record.actions;
+    return parseActions[0].gasAllot.map((gasAllot) => {
+              var defaultTrigger = <Tag type="normal" size="small">{gasAllot.account}->{gasAllot.gas}aft</Tag>;
+              return <Balloon  trigger={defaultTrigger} closable={false}>{gasAllot.account}->{gasAllot.gas}aft</Balloon>;
+            });
+  }
   onPageChange = (pageNo) => {
     this.setState({
       current: pageNo,
@@ -128,11 +149,13 @@ export default class TransactionsTable extends Component {
           >
             <Table.Column title="交易Hash" dataIndex="txHash" width={100} />
             <Table.Column title="区块Hash" dataIndex="blockHash" width={100} />
+            <Table.Column title="账户" dataIndex="parsedActions" width={100} cell={this.renderFromAccount.bind(this)}/>
             <Table.Column title="类型" dataIndex="parsedActions" width={100} cell={this.renderActionType.bind(this)}/>
-            <Table.Column title="详情" dataIndex="parsedActions" width={250} cell={this.renderDetailInfo.bind(this)} />
+            <Table.Column title="详情" dataIndex="parsedActions" width={200} cell={this.renderDetailInfo.bind(this)} />
             <Table.Column title="结果" dataIndex="parsedActions" width={80} cell={this.renderResult.bind(this)} />
             <Table.Column title="手续费" dataIndex="parsedActions" width={100} cell={this.renderGasFee.bind(this)} />
-            
+            <Table.Column title="手续费分配详情" dataIndex="parsedActions" width={150} cell={this.renderGasAllot.bind(this)} />
+
           </Table>
         </IceContainer>
       </div>

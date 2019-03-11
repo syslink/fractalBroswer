@@ -48,7 +48,7 @@ const asideMenuConfig = [
     // authority: 'admin',
     children: [
       {
-        name: '秘钥',
+        name: '密钥',
         path: '/KeystoreManager',
         authority: 'admin',
       },
@@ -86,6 +86,17 @@ const asideMenuConfig = [
       {
         name: '资产操作',
         path: '/assetOperator',
+      },
+    ],
+  },
+  {
+    name: '生产者',
+    path: '/portlets',
+    icon: 'publish',
+    children: [
+      {
+        name: '生产者列表',
+        path: '/producerList',
       },
     ],
   },

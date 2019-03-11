@@ -19,11 +19,13 @@ export default class BasicLine extends Component {
   componentDidMount() {
   	// 监听 msg 事件
     eventProxy.on('txInfos', (msg) => {
-
+      if (msg.length == 0) {
+        return;
+      }
       var minBlockHeight = msg[0].blockHeight;
       var maxBlockHeight = msg[msg.length - 1].blockHeight;
       this.setState({
-        txInfos: msg.slice(msg.length > 10 ? -10 : 0),
+        txInfos: msg.slice(msg.length > 12 ? -12 : 0),
         minBlockHeight: minBlockHeight,
         maxBlockHeight: maxBlockHeight,
       });

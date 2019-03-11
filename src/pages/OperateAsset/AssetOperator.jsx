@@ -3,9 +3,11 @@ import { Select, Card, Radio, Input } from '@icedesign/base';
 import IceContainer from '@icedesign/container';
 import AssetIssueTable from './AssetIssueTable'
 import AssetIncrease from './AssetIncrease'
-import NewOwnerSet from './NewOwnerSet'
+import AssetFounderSet from './AssetFounderSet'
 import AssetTransfer from './AssetTransfer'
 import { getBoundInfo } from '../../api'
+import AssetOwnerSet from './AssetOwnerSet';
+import AssetDestroy from './AssetDestroy';
 
 export default class AssetOperator extends Component {
   static displayName = 'SearchTable';
@@ -21,7 +23,9 @@ export default class AssetOperator extends Component {
       assetTypeValue: 0,
       accountNames:[],
       selectedAccountName: '',
-      password:''
+      password:'',
+      cardHeight: 350,
+      acountLabel: '账户'
     };
     var _this = this;
     getBoundInfo([]).then(response => {
@@ -49,66 +53,55 @@ export default class AssetOperator extends Component {
         <h4 style={styles.title}>资产操作</h4>
         <IceContainer style={styles.subContainer}>
           <Select
-            style={{width: 400}}
-            placeholder="选择您拥有的账户"
+            style={{width: 350}}
+            placeholder="选择发起资产操作的账户"
             onChange={this.onChangeAccount.bind(this)}
             dataSource={this.state.accountNames}
           ></Select>
-          <Input hasClear
-            htmlType="password"
-            onChange={this.handlePasswordChange.bind(this)} 
-            style={{ width: 400 }}
-            addonBefore="密码"
-            size="medium"
-            defaultValue=""
-            maxLength={20}
-            hasLimitHint
-            placeholder="此密码与账户绑定的公私钥相对应"
-          />
         </IceContainer>
-        <Card
+        <Card 
           style={styles.card}
           title="发行资产"
           language="en-us"
-          bodyHeight="325"
+          bodyHeight={this.state.cardHeight}
         >
-          <AssetIssueTable accountName={this.state.selectedAccountName} password={this.state.password}/>
+          <AssetIssueTable accountName={this.state.selectedAccountName}/>
         </Card>
 
         <Card
           style={styles.card}
           title="增发资产"
           language="en-us"
-          bodyHeight="325"
+          bodyHeight={this.state.cardHeight}
         >
-          <AssetIncrease />
+          <AssetIncrease accountName={this.state.selectedAccountName}/>
         </Card>
 
         <Card
           style={styles.card}
           title="设置资产管理者"
           language="en-us"
-          bodyHeight="325"
+          bodyHeight={this.state.cardHeight}
         >
-          <NewOwnerSet />
+          <AssetOwnerSet accountName={this.state.selectedAccountName}/>
         </Card>
 
         <Card
           style={styles.card}
           title="设置资产创建者"
           language="en-us"
-          bodyHeight="325"
+          bodyHeight={this.state.cardHeight}
         >
-          <AssetTransfer />
+          <AssetFounderSet accountName={this.state.selectedAccountName}/>
         </Card>
 
         <Card
           style={styles.card}
           title="销毁资产"
           language="en-us"
-          bodyHeight="325"
+          bodyHeight={this.state.cardHeight}
         >
-          <AssetTransfer />
+          <AssetDestroy accountName={this.state.selectedAccountName}/>
         </Card>
       </IceContainer>
     );
@@ -142,5 +135,6 @@ const styles = {
     marginRight: '10px',
     background: '#fff',
     borderRadius: '6px',
+    padding: '10px 10px 20px 10px',
   },
 };

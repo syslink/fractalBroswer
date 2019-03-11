@@ -1,5 +1,7 @@
 import pathToRegexp from 'path-to-regexp';
 
+import cookie from 'react-cookies'
+import BigNumber from 'bignumber.js';
 /**
  * 格式化菜单数据结构，如果子菜单有权限配置，则子菜单权限优先于父级菜单的配置
  * 如果子菜单没有配置，则继承自父级菜单的配置
@@ -89,15 +91,11 @@ function hex2Bytes(str) {
   var pos = 0;
   var len = str.length;
 
-  if(len %2 != 0)
-  {
-      return null; 
-  }
   if(str[0] == '0' && str[1] == 'x') {
     pos = 2;
     len -= 2;
   }
-  if(len %2 != 0)
+  if(len % 2 != 0)
   {
       return null; 
   }
@@ -114,6 +112,16 @@ function hex2Bytes(str) {
   return hexA;
 }
 
+function str2Bytes(str) {
+  var bytes = [];
+  for (var i = 0; i < str.length; ++i) {
+    var code = str.charCodeAt(i);
+    code = code - 48;
+    bytes = bytes.concat([code]);
+  }
+  return bytes;
+}
+
 function bytes2Hex(array) {
   var hexStr = '0x';
   array.map((item) => {
@@ -125,5 +133,34 @@ function bytes2Hex(array) {
   });
   return hexStr;
 }
+// 每个byte里存放的是二进制数据，从高位依次到低位
+function bytes2Number(bytes) {
+  var len = bytes.length;
+  var number = new BigNumber(0);
+  for (var i = len - 1; i >= 0; i--) {
+    var byteValue = new BigNumber(bytes[i]);
+    var factor = new BigNumber(2).pow((len - 1 - i) * 8);
+    number = number.plus(byteValue.multipliedBy(factor));
+  }
+  return number;
+}
 
-export { getFlatMenuData, getRouterData, formatterMenuData, hex2Bytes, bytes2Hex };
+function saveTxHash(accountName, actionType, txHash) {
+  var txHashSet = cookie.load(accountName);
+  if (txHashSet == undefined) {
+    txHashSet = [];
+  }
+  var curDate = new Date().toLocaleString();
+  var txHashInfo = {date: curDate, txHash: txHash, actionType: actionType};
+  txHashSet = [txHashInfo, ...txHashSet];
+  cookie.save(accountName, txHashSet, { path: '/', maxAge: 3600 * 24 * 365 });
+}
+
+function saveTxBothFromAndTo(fromAccount, toAccount, actionType, txHash) {
+  saveTxHash(fromAccount, actionType, txHash);
+  if (toAccount != undefined && toAccount != '') {
+    saveTxHash(toAccount, actionType, txHash);
+  }
+}
+
+export { getFlatMenuData, getRouterData, formatterMenuData, hex2Bytes, bytes2Hex, str2Bytes, saveTxHash, saveTxBothFromAndTo, bytes2Number };

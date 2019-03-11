@@ -127,6 +127,17 @@ export async function getDposAccountInfo(params) {
 }
 
 
+export async function getDposInfo(params) {
+  var dataToSrv = JSON.stringify({"jsonrpc": "2.0", 
+                                    "method": "dpos_info", 
+                                    "params": [],
+                                    "id": 1});
+  return axios({
+    method: 'post',
+    data: dataToSrv,
+  });
+}
+
 export async function getDposIrreversibleInfo(params) {
   var dataToSrv = JSON.stringify({"jsonrpc": "2.0", 
                                   "method": "dpos_irreversible", 
@@ -207,7 +218,7 @@ export async function getNonce(params) {
 export async function sendTransaction(params) {
   var resp = await getNonce([params.accountName]);
   var basicInfo = {"actionType":params.actionType, 
-                   "chainID":45, 
+                   "chainID":1, 
                    "gasAssetId":1, 
                    "from":params.accountName, 
                    "to":params.toAccountName == undefined ? '' : params.toAccountName, 
@@ -227,6 +238,50 @@ export async function sendTransaction(params) {
     data: dataToSrv,
   });
 }
+
+export async function signTx(params) {
+  var resp = await getNonce([params.accountName]);
+
+  var actions = [];
+	var gasAssetID = 1;
+	var gasPrice = params.gasPrice == undefined ? 10 : params.gasPrice
+
+  // for(let action of params.actions) {
+  //   AType    ActionType
+  //   Nonce    uint64
+  //   AssetID  uint64
+  //   From     common.Name
+  //   To       common.Name
+  //   GasLimit uint64
+  //   Amount   *big.Int
+  //   Payload  []byte
+  // }
+}
+export async function transfer(params) {
+  var resp = await signTx([params]);
+
+  var basicInfo = {"actionType":params.actionType, 
+                   "chainID":1, 
+                   "gasAssetId":1, 
+                   "from":params.accountName, 
+                   "to":params.toAccountName == undefined ? '' : params.toAccountName, 
+                   "nonce":resp.data.result, 
+                   "assetId":params.assetId == undefined ? 1 : params.assetId, 
+                   "gas":params.gasLimit == undefined ? 200000 : params.gasLimit, 
+                   "gasPrice":params.gasPrice == undefined ? 10 : params.gasPrice, 
+                   "value":params.value == undefined ? 0 : params.value, 
+                   "data":params.data == undefined ? '' : params.data, 
+                   "password":params.password}
+  var dataToSrv = JSON.stringify({"jsonrpc": "2.0", 
+                                  "method": "ft_sendRawTransaction", 
+                                  "params": [basicInfo],
+                                  "id": 1});
+  return axios({
+    method: 'post',
+    data: dataToSrv,
+  });
+}
+
 export async function getAccountInfo(params) {
   var dataToSrv = JSON.stringify({"jsonrpc": "2.0", 
                                   "method": "account_getAccountByName", 
@@ -272,6 +327,7 @@ export default {
   getProducers,
   getDposAccountInfo,
   getDposIrreversibleInfo,
+  getDposInfo,
   sendTransaction,
   getValidateEpchoInfo,
   getAccountInfo,

@@ -2,7 +2,7 @@ import React, { Component } from 'react';
 import { Table, Pagination, Search, Grid, Feedback } from '@icedesign/base';
 import IceContainer from '@icedesign/container';
 import TableFilter from './TableFilter';
-import {getAccountInfo, getAssetInfoById} from '../../api'
+import {getAccountInfo, getAssetInfoById, getAssetInfoByName} from '../../api'
 import BigNumber from "bignumber.js"
 const { Row, Col } = Grid;
 
@@ -78,6 +78,17 @@ export default class SearchTable extends Component {
       balanceInfosOnePage: balanceInfos,
     });
   }
+  convertNumber = (amount, decimals) => {
+    var amount = new BigNumber(amount);
+    amount = amount.shiftedBy(parseInt(decimals * -1)).toNumber();
+    return amount;
+  }
+  convertAssetNumber = (assetInfo) => {
+    assetInfo.amount = this.convertNumber(assetInfo.amount, assetInfo.decimals);
+    assetInfo.addIssue = this.convertNumber(assetInfo.addIssue, assetInfo.decimals);
+    assetInfo.upperLimit = this.convertNumber(assetInfo.upperLimit, assetInfo.decimals);
+    return assetInfo;
+  }
   onAssetSearch = async (value) => {
     var assetId = value.key;
     if (this.state.assetInfos[assetId] != undefined) {
@@ -85,11 +96,23 @@ export default class SearchTable extends Component {
     } else {
       var resp = await getAssetInfoById([parseInt(assetId)]);
       if (resp.data.hasOwnProperty("result") && resp.data.result != null) {
-        this.setState({assetInfo: [resp.data.result]});
-      } if (resp.data.hasOwnProperty("result") && resp.data.result == null) {
-        Feedback.toast.error('无此资产信息');
-      } else if (resp.data.hasOwnProperty("error")) {
-        Feedback.toast.error(resp.data.error.message);
+        var assetInfo = resp.data.result;
+        assetInfo = this.convertAssetNumber(assetInfo);
+        this.setState({
+          assetInfo: [assetInfo]});
+      } else {
+        var assetName = assetId;
+        resp = await getAssetInfoByName([assetName]);
+        if (resp.data.hasOwnProperty("result") && resp.data.result != null) {
+          var assetInfo = resp.data.result;
+          assetInfo = this.convertAssetNumber(assetInfo);
+          this.setState({
+            assetInfo: [assetInfo]});
+        } if (resp.data.hasOwnProperty("result") && resp.data.result == null) {
+          Feedback.toast.error('无此资产信息');
+        } else if (resp.data.hasOwnProperty("error")) {
+          Feedback.toast.error(resp.data.error.message);
+        }
       }
     }
   }
@@ -137,7 +160,7 @@ export default class SearchTable extends Component {
                       size="large"
                       autoWidth="true"
                       onSearch={this.onAssetSearch.bind(this)}
-                      placeholder="资产ID"
+                      placeholder="资产ID/资产名称"
                   />
               </Col>
             </Row>
@@ -149,15 +172,15 @@ export default class SearchTable extends Component {
               hasBorder={false}
               style={{ padding: '0 20px 20px' }}
             >
-              <Table.Column title="资产ID" dataIndex="assetid" width={50}/>
-              <Table.Column title="名称" dataIndex="assetname" width={50}/>
+              <Table.Column title="资产ID" dataIndex="assetId" width={50}/>
+              <Table.Column title="名称" dataIndex="assetName" width={50}/>
               <Table.Column title="符号" dataIndex="symbol" width={50}/>
               <Table.Column title="已发行量" dataIndex="amount" width={50}/>
               <Table.Column title="精度" dataIndex="decimals" width={50}/>
               <Table.Column title="创建人" dataIndex="founder" width={50}/>
               <Table.Column title="管理者" dataIndex="owner" width={50}/>
-              <Table.Column title="增发量" dataIndex="AddIssue" width={50}/>
-              <Table.Column title="资产上限" dataIndex="UpperLimit" width={50}/>
+              <Table.Column title="增发量" dataIndex="addIssue" width={50}/>
+              <Table.Column title="资产上限" dataIndex="upperLimit" width={50}/>
             </Table>
           </IceContainer>
         </IceContainer>

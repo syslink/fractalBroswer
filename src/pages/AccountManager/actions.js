@@ -6,6 +6,7 @@ import {bindAccountPublicKeyReq,
         createAccountBySystemReq,
         getAccountInfoReq,} from './api';
 import { sendTransaction } from '../../api';
+import { saveTxHash, saveTxBothFromAndTo} from '../../utils/utils';
 import {
   BIND_ACCOUNT_REQUEST	,
   BIND_ACCOUNT_SUCCESS	,
@@ -65,7 +66,6 @@ import {
   CREATE_NEW_ACCOUNT,
 } from './constants';
 
-import cookie from 'react-cookies'
 
 const bindAccountPublicKeyAction = () => {
   return {
@@ -605,24 +605,6 @@ export const importAccount = (params) => {
   }
 }
 
-const saveTxHash = (accountName, actionType, txHash) => {
-  var txHashSet = cookie.load(accountName);
-  if (txHashSet == undefined) {
-    txHashSet = [];
-  }
-  var curDate = new Date().toLocaleString();
-  var txHashInfo = {date: curDate, txHash: txHash, actionType: actionType};
-  txHashSet = [txHashInfo, ...txHashSet];
-  cookie.save(accountName, txHashSet, { path: '/', maxAge: 3600 * 24 * 365 });
-}
-
-const saveTxBothFromAndTo = (fromAccount, toAccount, actionType, txHash) => {
-  saveTxHash(fromAccount, actionType, txHash);
-  if (toAccount != undefined && toAccount != '') {
-    saveTxHash(toAccount, actionType, txHash);
-  }
-}
-
 export const openDialogOfTransfer = (params) => {
   return async (dispatch) => {
     dispatch(openTransferDialogAction());
@@ -680,7 +662,7 @@ export const updatePK = (params) => {
           dispatch(updatePKSuccessAction(response.data.result));
           setTimeout(() => {
             dispatch(getAccountInfo([params.accountName])).then(resp => {
-              if (resp.hasOwnProperty("result")) {
+              if (resp.hasOwnProperty("result") && resp.result != null) {
                 dispatch(bindAccountPublicKey([resp.result.accountName]));
               } 
             });

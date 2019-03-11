@@ -65,32 +65,36 @@ class BlockTxLayout extends Component {
     var maxSpan = oneHour / blockInterval;
     //var txNums = this.caculateTxNums(curHeight, intervalTime / blockInterval, oneHour / blockInterval);
 
-    if (this.state.txInfos.length > 10) {
-      this.state.txInfos = this.state.txInfos.slice(this.state.txInfos.length - 10);
+    if (this.state.txInfos.length > 12) {
+      this.state.txInfos = this.state.txInfos.slice(this.state.txInfos.length - 12);
     }
 
     var lastMaxHeight = 0;
     if (this.state.txInfos.length > 0) {
       lastMaxHeight = this.state.txInfos[this.state.txInfos.length - 1].blockHeight;
     }
-    var totalNum = 0;
-    var maxTxNum = 0;
-    for (var fromHeigth = curHeight - maxSpan + interval; fromHeigth <= curHeight;) {
-      if (fromHeigth <= lastMaxHeight + interval) {
+    var totalNum = this.state.totalTxNumInOneHour;
+    var maxTxNum = this.state.maxTPS * intervalTime;
+    if (curHeight - lastMaxHeight >= interval) {
+      totalNum = 0;
+      maxTxNum = 0;
+      for (var fromHeigth = curHeight - maxSpan + interval; fromHeigth <= curHeight;) {
+        if (fromHeigth <= lastMaxHeight + interval) {
+          fromHeigth = fromHeigth + interval;
+          continue;
+        }
+        var resp = await getTotalTxNumByBlockNum([fromHeigth, interval]);
+        var txNum = resp.data.result;
+        this.state.txInfos.push({blockHeight:fromHeigth, txNum:txNum});
+        console.log("new txInfos = " + fromHeigth + '->' + txNum);
+        totalNum += txNum;
+        if (txNum > maxTxNum) {
+          maxTxNum = txNum;
+        }
         fromHeigth = fromHeigth + interval;
-        continue;
       }
-      var resp = await getTotalTxNumByBlockNum([fromHeigth, interval]);
-      var txNum = resp.data.result;
-      this.state.txInfos.push({blockHeight:fromHeigth, txNum:txNum});
-      console.log("new txInfos = " + fromHeigth + '->' + txNum);
-      totalNum += txNum;
-      if (txNum > maxTxNum) {
-        maxTxNum = txNum;
-      }
-      fromHeigth = fromHeigth + interval;
+      eventProxy.trigger('txInfos', this.state.txInfos);
     }
-    eventProxy.trigger('txInfos', this.state.txInfos);
     this.setState({
       curBlockInfo: curBlockInfo,
       irreversible: irreversibleInfo,
@@ -98,7 +102,7 @@ class BlockTxLayout extends Component {
       maxTPS: Math.round(maxTxNum / intervalTime),
       latestEpchoInfo: latestEpchoInfo,
       curProducerList: producers,
-      activeProducers: latestEpchoInfo.ActivatedProducerSchedule,
+      activeProducers: latestEpchoInfo.activatedProducerSchedule,
     });
 
     setTimeout(() => {this.updateBlockChainInfo()}, 3000);
@@ -165,7 +169,7 @@ class BlockTxLayout extends Component {
               </span>
             </div>
             <div className="count" style={styles.smallCount}>
-              {this.state.irreversible.ProposedIrreversible}
+              {this.state.irreversible.proposedIrreversible}
               <span style={styles.extraIcon}>
                 <Balloon
                   trigger={
@@ -276,7 +280,7 @@ class BlockTxLayout extends Component {
               投票数
             </div>
             <div style={styles.count} className="count">
-             {this.state.latestEpchoInfo.TotalQuantity} FT
+             {this.state.latestEpchoInfo.totalQuantity} FT
              <span style={styles.extraIcon}>
                 <Balloon
                   trigger={
@@ -295,7 +299,7 @@ class BlockTxLayout extends Component {
               </span>
             </div>
             <div style={styles.smallCount} className="count">
-              {this.state.latestEpchoInfo.ActivatedTotalQuantity} FT
+              {this.state.latestEpchoInfo.activatedTotalQuantity} FT
               <span style={styles.extraIcon}>
                 <Balloon
                   trigger={

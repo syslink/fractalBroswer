@@ -4,7 +4,9 @@ import { Table, Button, Select } from '@icedesign/base';
 import CellEditor from './CellEditor';
 import './EditableTable.scss';
 import { Input, Dialog, Feedback } from '@icedesign/base';
-import { Tag } from '@alifd/next';
+import { Tag, Balloon } from '@alifd/next';
+
+import * as txParser from '../../../../utils/transactionParser';
 
 import injectReducer from '../../../../utils/injectReducer';
 
@@ -15,7 +17,7 @@ import { bindAccountAddr, deleteBoundInfo, updateBoundInfo,
          closeDialogOfCreateAccountBySelf, closeDialogOfCreateAccountBySystem, closeDialogOfTransfer, closeFailDialog, closeDialogOfImportAccount,
          openDialogOfUpdatePK, closeDialogOfUpdatePK, updatePK } from '../../actions';
 import {TRANSFER, CREATE_NEW_ACCOUNT, UPDATE_ACCOUNT} from '../../../../utils/constant'
-import {getAssetInfoById, getSuggestionGasPrice, getTransactionByHash, getTransactionReceipt, sendTransaction} from '../../../../api'
+import {getAssetInfoById, getSuggestionGasPrice, getTransactionByHash, getTransactionReceipt, sendTransaction, getDposInfo} from '../../../../api'
 
 import reducer from '../../reducer';
 
@@ -25,6 +27,7 @@ import BigNumber from "bignumber.js"
 
 import cookie from 'react-cookies'
 import {encode} from 'rlp'
+import { str2Bytes } from '../../../../utils/utils';
 
 class EditableTable extends Component {
   static displayName = 'EditableTable';
@@ -59,6 +62,7 @@ class EditableTable extends Component {
       curBalance: {},
       curTransferAsset: {},
       curAccount: '',
+      curAccountFTBalance: '',
       transferFromAccount: '',
       transferToAccount: '',
       transferValue: 0,
@@ -69,6 +73,8 @@ class EditableTable extends Component {
       gasLimit: 0,
       txVisible: false,
       txInfos: [],
+      inputOtherPK: false,
+      inputOtherPKStr: '输入其它公钥',
       successCallback: () => {},
       errCallback: (error) => {},
     };
@@ -100,6 +106,9 @@ class EditableTable extends Component {
         var resp = await getAssetInfoById([balance.assetID]);
         _this.state.assetInfos[balance.assetID] = resp.data.result;
       }
+      if (balance.assetID == 1) {
+        _this.state.curAccountFTBalance = balance.balance;
+      }
     }
     this.setState({
       assetVisible: true,
@@ -124,8 +133,16 @@ class EditableTable extends Component {
     for (let balance of this.props.accountInfos[index].balances) {
       if (this.state.assetInfos[balance.assetID] == undefined) {
         var resp = await getAssetInfoById([balance.assetID]);
+        console.log(resp);
         this.state.assetInfos[balance.assetID] = resp.data.result;
       }
+    }
+
+    var dposInfo;
+    dposInfo = {};
+    var dposResp = await getDposInfo();
+    if (dposResp.data.hasOwnProperty('result') && dposResp.data.result != null) {
+      dposInfo = dposResp.data.result;
     }
 
     let {assetInfos} = this.state;
@@ -134,25 +151,28 @@ class EditableTable extends Component {
       var txInfos = [];
       for (let txInfo of txInfoSet) {
         var txResp = await getTransactionByHash([txInfo.txHash]);
-        var actionInfo = txResp.data.result.actions[0];
-        switch(actionInfo.type) {
-          case TRANSFER:
-            txInfo['detailInfo'] = actionInfo.from + "向" + actionInfo.to + "转账" 
-                                + this.getReadableNumber(actionInfo.value, actionInfo.assetID) + assetInfos[actionInfo.assetID].symbol;
-            break;
-          case CREATE_NEW_ACCOUNT:
-            txInfo['detailInfo'] = actionInfo.from + "创建账户：" + actionInfo.to;
-            if (actionInfo.value > 0) {
-              txInfo['detailInfo'] += "并转账" + this.getReadableNumber(actionInfo.value, actionInfo.assetID) + assetInfos[actionInfo.assetID].symbol;
-            }     
-            break;       
+        if (txResp.data.result != undefined) {
+          var transaction = txResp.data.result;
+          var parsedActions = [];
+          var i = 0;
+          var receiptResp = await getTransactionReceipt([txInfo.txHash]);
+          var actionResults = receiptResp.data.result.actionResults;
+          for (let actionInfo of transaction.actions) {
+            if (this.state.assetInfos[actionInfo.assetID] == undefined) {
+              var resp = await getAssetInfoById([actionInfo.assetID]);
+              this.state.assetInfos[actionInfo.assetID] = resp.data.result;
+            }
+            var parsedAction = txParser.parseAction(actionInfo, this.state.assetInfos[actionInfo.assetID], this.state.assetInfos, dposInfo);
+            parsedAction['result'] = actionResults[i].status == 1 ? '成功' : '失败（' + actionResults[i].error + '）';
+            parsedAction['gasFee'] = actionResults[i].gasUsed + 'aft';
+            parsedAction['gasAllot'] = actionResults[i].gasAllot;
+            parsedActions.push(parsedAction);
+            i++;
+          }
+          transaction["actions"] = parsedActions;
+          transaction["date"] = txInfo.date;
+          txInfos.push(transaction);
         }
-        
-        var receiptResp = await getTransactionReceipt([txInfo.txHash]);
-        var actionResult = receiptResp.data.result.actionResults[0];
-        txInfo['result'] = actionResult.status == 1 ? '成功' : '失败（' + actionResult.error + '）';
-
-        txInfos.push(txInfo);
       }
       this.setState({
         txVisible: true,
@@ -317,8 +337,10 @@ class EditableTable extends Component {
     if (publicKey == '') {
       publicKey = this.state.selfPublicKey;
     }
+    var rlpData = encode([this.state.selfAccount, '', 0, this.state.selfPublicKey]);
+
     var params = {accountName:this.state.creator, 
-                  data:this.state.selfPublicKey, 
+                  data:'0x' + rlpData.toString('hex'), 
                   actionType:CREATE_NEW_ACCOUNT,
                   toAccountName:this.state.selfAccount,
                   password:this.state.password
@@ -387,19 +409,33 @@ class EditableTable extends Component {
     }
 
     var decimals = this.state.curTransferAsset.decimals;
-    var value = new BigNumber(10).pow(decimals);
-    value = value.multipliedBy(this.state.transferValue);
-    var valueAddGasFee = value.plus(new BigNumber(this.state.gasPrice).multipliedBy(this.state.gasLimit));
-    var maxValue = new BigNumber(this.state.curBalance.balance);
-    if (valueAddGasFee.comparedTo(maxValue) > 0) {
-      Feedback.toast.error("余额不足");
-      return;
+    var value = new BigNumber(this.state.transferValue).shiftedBy(decimals);
+
+    var gasValue = new BigNumber(this.state.gasPrice).multipliedBy(this.state.gasLimit);
+    if (this.state.curTransferAsset.assetId == 1) {
+      var valueAddGasFee = value.plus(gasValue);
+      var maxValue = new BigNumber(this.state.curBalance.balance);
+      
+      if (valueAddGasFee.comparedTo(maxValue) > 0) {
+        Feedback.toast.error("余额不足");
+        return;
+      }
+    } else {
+      if (value.comparedTo(maxValue) > 0) {
+        Feedback.toast.error("余额不足");
+        return;
+      }
+      var ftValue = new BigNumber(this.state.curAccountFTBalance);
+      if (gasValue.comparedTo(ftValue) > 0) {
+        Feedback.toast.error("FT余额不足，可能无法支付足够GAS费");
+        return;
+      }
     }
 
     var transferInfo = {"actionType": TRANSFER, 
                         "accountName": this.state.curAccount.accountName, 
                         "toAccountName":this.state.transferToAccount, 
-                        "assetId": this.state.curTransferAsset.assetid, 
+                        "assetId": this.state.curTransferAsset.assetId, 
                         "gasLimit": new BigNumber(this.state.gasLimit).toNumber(), 
                         "gasPrice": new BigNumber(this.state.gasPrice).toNumber(), 
                         "value": value.toNumber(),
@@ -443,9 +479,14 @@ class EditableTable extends Component {
   }
   handleSelfPublicKeyChange(v, e) {
     this.state.selfPublicKey = v;
+    if (v == this.state.inputOtherPKStr) {
+      this.setState({inputOtherPK: true});
+    } else {
+      this.setState({inputOtherPK: false, otherPublicKey: ''});
+    }
   }
   handleOthersPublicKeyChange(v, e) {
-    this.state.otherPublicKey = v;
+    this.setState({otherPublicKey: v});
   }
   handleSelfAccountNameChange(v, e) {
     this.state.selfAccount = v;
@@ -509,6 +550,46 @@ class EditableTable extends Component {
       visible: false
     });
   };
+
+  renderActionType = (value, index, record) => {
+    var parseActions = record.actions;
+    return parseActions.map((item)=>{
+      var defaultTrigger = <Tag type="normal" size="small">{item.actionType}</Tag>;
+      return <Balloon  trigger={defaultTrigger} closable={false}>{item.actionType}</Balloon>;
+    });
+  }
+
+  renderDetailInfo = (value, index, record) => {
+    var parseActions = record.actions;
+    return parseActions.map((item)=>{
+      var defaultTrigger = <Tag type="normal" size="small">{item.detailInfo}</Tag>;
+      return <Balloon  trigger={defaultTrigger} closable={false}>{item.detailInfo}</Balloon>;
+    });
+  }
+
+  renderResult = (value, index, record) => {
+    var parseActions = record.actions;
+    return parseActions.map((item)=>{
+      var defaultTrigger = <Tag type="normal" size="small">{item.result}</Tag>;
+      return <Balloon  trigger={defaultTrigger} closable={false}>{item.result}</Balloon>;
+    });
+  }
+
+  renderGasFee = (value, index, record) => {
+    var parseActions = record.actions;
+    return parseActions.map((item)=>{
+      var defaultTrigger = <Tag type="normal" size="small">{item.gasFee}</Tag>;
+      return <Balloon  trigger={defaultTrigger} closable={false}>{item.gasFee}</Balloon>;
+    });
+  }
+
+  renderGasAllot = (value, index, record) => {
+    var parseActions = record.actions;
+    return parseActions[0].gasAllot.map((gasAllot) => {
+              var defaultTrigger = <Tag type="normal" size="small">{gasAllot.account}->{gasAllot.gas}aft</Tag>;
+              return <Balloon  trigger={defaultTrigger} closable={false}>{gasAllot.account}->{gasAllot.gas}aft</Balloon>;
+            });
+  }
 
   render() {
     return (
@@ -638,7 +719,7 @@ class EditableTable extends Component {
             onChange={this.handleSelfPublicKeyChange.bind(this)}
           >
           {
-            this.props.keystoreInfo.map((keystore) => (
+            [...this.props.keystoreInfo, {publicKey:this.state.inputOtherPKStr} ].map((keystore) => (
               <Select.Option value={keystore.publicKey} lable={keystore.publicKey}>
                 {keystore.publicKey}
               </Select.Option>
@@ -654,12 +735,12 @@ class EditableTable extends Component {
             addonBefore="其它公钥"
             size="medium"
             defaultValue=""
+            value={this.state.otherPublicKey}
             maxLength={67}
             hasLimitHint
+            disabled={!this.state.inputOtherPK}
             placeholder="若此处填入公钥，创建时将以此公钥为准"
           />
-          <br />
-          (以上两种公钥二选一即可)
         </Dialog>
 
         <Dialog
@@ -677,7 +758,7 @@ class EditableTable extends Component {
             //dataSource={}
           >
             {
-              this.props.keystoreInfo.map((keystore) => {
+              [...this.props.keystoreInfo, {publicKey:this.state.inputOtherPKStr}].map((keystore) => {
                 return (
                   <Select.Option value={keystore.publicKey} lable={keystore.publicKey} 
                                  disabled={this.state.curAccount.publicKey == keystore.publicKey}>
@@ -697,10 +778,9 @@ class EditableTable extends Component {
             defaultValue=""
             maxLength={67}
             hasLimitHint
-            placeholder="若此处填入公钥，创建时将以此公钥为准"
+            value={this.state.otherPublicKey}
+            disabled={!this.state.inputOtherPK}
           />
-          <br />
-          (以上两种公钥二选一即可)
           <br />
           <br />
           <Input hasClear
@@ -786,7 +866,7 @@ class EditableTable extends Component {
         </Dialog>  
 
         <Dialog
-          style={{ width: 800 }}
+          style={{ width: 1000 }}
           visible={this.state.txVisible}
           title="交易信息"
           footerActions='ok'
@@ -799,11 +879,18 @@ class EditableTable extends Component {
           <div className="editable-table">
             <IceContainer>
               <Table primaryKey="date" dataSource={this.state.txInfos} hasBorder={false} resizable={true}>
-                <Table.Column title="时间" dataIndex="date" width={150}/>
-                <Table.Column title="ID" dataIndex="txHash" width={100} />
-                <Table.Column title="类型" width={50} dataIndex="actionType" cell={this.actionTypeRender.bind(this)}/>
+                <Table.Column title="时间" dataIndex="date" width={90}/>
+                <Table.Column title="交易Hash" dataIndex="txHash" width={150} />
+
+                <Table.Column title="类型" dataIndex="parsedActions" width={150} cell={this.renderActionType.bind(this)}/>
+                <Table.Column title="详情" dataIndex="parsedActions" width={200} cell={this.renderDetailInfo.bind(this)} />
+                <Table.Column title="结果" dataIndex="parsedActions" width={100} cell={this.renderResult.bind(this)} />
+                <Table.Column title="总手续费" dataIndex="parsedActions" width={100} cell={this.renderGasFee.bind(this)} />
+                <Table.Column title="手续费分配详情" dataIndex="parsedActions" width={150} cell={this.renderGasAllot.bind(this)} />
+
+                {/* <Table.Column title="类型" width={50} dataIndex="actionType" cell={this.actionTypeRender.bind(this)}/>
                 <Table.Column title="详情" width={200} dataIndex="detailInfo"/>
-                <Table.Column title="结果" width={50} dataIndex="result"/>
+                <Table.Column title="结果" width={50} dataIndex="result"/> */}
               </Table>
             </IceContainer>
           </div>
