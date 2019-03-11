@@ -128,62 +128,65 @@ class EditableTable extends Component {
   }
 
   showTxs = async (index) => {
-    const _this = this;
-    this.state.curAccount = this.props.accountInfos[index];
-    for (let balance of this.props.accountInfos[index].balances) {
-      if (this.state.assetInfos[balance.assetID] == undefined) {
-        var resp = await getAssetInfoById([balance.assetID]);
-        console.log(resp);
-        this.state.assetInfos[balance.assetID] = resp.data.result;
-      }
-    }
-
-    var dposInfo;
-    dposInfo = {};
-    var dposResp = await getDposInfo();
-    if (dposResp.data.hasOwnProperty('result') && dposResp.data.result != null) {
-      dposInfo = dposResp.data.result;
-    }
-
-    let {assetInfos} = this.state;
-    var txInfoSet = cookie.load(this.state.curAccount.accountName);
-    if (txInfoSet != undefined) {
-      var txInfos = [];
-      for (let txInfo of txInfoSet) {
-        var txResp = await getTransactionByHash([txInfo.txHash]);
-        if (txResp.data.result != undefined) {
-          var transaction = txResp.data.result;
-          var parsedActions = [];
-          var i = 0;
-          var receiptResp = await getTransactionReceipt([txInfo.txHash]);
-          var actionResults = receiptResp.data.result.actionResults;
-          for (let actionInfo of transaction.actions) {
-            if (this.state.assetInfos[actionInfo.assetID] == undefined) {
-              var resp = await getAssetInfoById([actionInfo.assetID]);
-              this.state.assetInfos[actionInfo.assetID] = resp.data.result;
-            }
-            var parsedAction = txParser.parseAction(actionInfo, this.state.assetInfos[actionInfo.assetID], this.state.assetInfos, dposInfo);
-            parsedAction['result'] = actionResults[i].status == 1 ? '成功' : '失败（' + actionResults[i].error + '）';
-            parsedAction['gasFee'] = actionResults[i].gasUsed + 'aft';
-            parsedAction['gasAllot'] = actionResults[i].gasAllot;
-            parsedActions.push(parsedAction);
-            i++;
-          }
-          transaction["actions"] = parsedActions;
-          transaction["date"] = txInfo.date;
-          txInfos.push(transaction);
+    try {
+      this.state.curAccount = this.props.accountInfos[index];
+      for (let balance of this.props.accountInfos[index].balances) {
+        if (this.state.assetInfos[balance.assetID] == undefined) {
+          var resp = await getAssetInfoById([balance.assetID]);
+          console.log(resp);
+          this.state.assetInfos[balance.assetID] = resp.data.result;
         }
       }
-      this.setState({
-        txVisible: true,
-        txInfos: txInfos,
-      });
-    } else {
-      this.setState({
-        txVisible: true,
-        txInfos: [],
-      });
+
+      var dposInfo;
+      dposInfo = {};
+      var dposResp = await getDposInfo();
+      if (dposResp.data.hasOwnProperty('result') && dposResp.data.result != null) {
+        dposInfo = dposResp.data.result;
+      }
+
+      var txInfoSet = cookie.load(this.state.curAccount.accountName);
+      if (txInfoSet != undefined) {
+        var txInfos = [];
+        for (let txInfo of txInfoSet) {
+          var txResp = await getTransactionByHash([txInfo.txHash]);
+          if (txResp.data.result != undefined) {
+            var transaction = txResp.data.result;
+            var parsedActions = [];
+            var i = 0;
+            var receiptResp = await getTransactionReceipt([txInfo.txHash]);
+            var actionResults = receiptResp.data.result.actionResults;
+            for (let actionInfo of transaction.actions) {
+              if (this.state.assetInfos[actionInfo.assetID] == undefined) {
+                var resp = await getAssetInfoById([actionInfo.assetID]);
+                this.state.assetInfos[actionInfo.assetID] = resp.data.result;
+              }
+              var parsedAction = txParser.parseAction(actionInfo, this.state.assetInfos[actionInfo.assetID], this.state.assetInfos, dposInfo);
+              parsedAction['result'] = actionResults[i].status == 1 ? '成功' : '失败（' + actionResults[i].error + '）';
+              parsedAction['gasFee'] = actionResults[i].gasUsed + 'aft';
+              parsedAction['gasAllot'] = actionResults[i].gasAllot;
+              parsedActions.push(parsedAction);
+              i++;
+            }
+            transaction["actions"] = parsedActions;
+            transaction["date"] = txInfo.date;
+            txInfos.push(transaction);
+          }
+        }
+        this.setState({
+          txVisible: true,
+          txInfos: txInfos,
+        });
+      } else {
+        this.setState({
+          txVisible: true,
+          txInfos: [],
+        });
+      }
+    } catch (error) {
+      console.log(error);
     }
+    
   }
   renderOperation = (value, index) => {
     return (
