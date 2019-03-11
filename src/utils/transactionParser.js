@@ -154,7 +154,12 @@ function parseAction(actionInfo, assetInfo, allAssetInfos, dposInfo){
       break;
     case actionTypes.CHANGE_PRODUCER:
       actionParseInfo['actionType'] = '改投生产者';
-      actionParseInfo['detailInfo'] = payloadInfo;  // 
+      try {
+        var newProducer = String.fromCharCode.apply(null, payloadInfo[0]);
+        actionParseInfo['detailInfo'] = '获得投票的生产者:' + newProducer;  // 
+      } catch (error) {
+        actionParseInfo['detailInfo'] = '发生错误';
+      }
       actionParseInfo['detailObj'] = {};
       break;
     case actionTypes.UNVOTE_PRODUCER:
