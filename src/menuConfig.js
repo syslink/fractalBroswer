@@ -100,6 +100,17 @@ const asideMenuConfig = [
       },
     ],
   },
+  {
+    name: '合约管理',
+    path: '/portlets',
+    icon: 'publish',
+    children: [
+      {
+        name: '合约开发',
+        path: '/contractManager',
+      },
+    ],
+  },
 ];
 
 export { headerMenuConfig, asideMenuConfig };

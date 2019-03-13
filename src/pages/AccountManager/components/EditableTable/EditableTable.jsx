@@ -236,7 +236,7 @@ class EditableTable extends Component {
       founder = this.state.curAccount.accountName;
     }
 
-    var rlpData = encode([founder, this.state.curAccount.chargeRatio, publicKey])
+    var rlpData = encode(['', founder, this.state.curAccount.chargeRatio, publicKey])
     var params = {
       accountName: this.state.curAccount.accountName,
       actionType: UPDATE_ACCOUNT,
@@ -340,7 +340,7 @@ class EditableTable extends Component {
     if (publicKey == '') {
       publicKey = this.state.selfPublicKey;
     }
-    var rlpData = encode([this.state.selfAccount, '', 0, this.state.selfPublicKey]);
+    var rlpData = encode([this.state.selfAccount, this.state.creator, 0, this.state.selfPublicKey]);
 
     var params = {accountName:this.state.creator, 
                   data:'0x' + rlpData.toString('hex'), 
@@ -602,9 +602,14 @@ class EditableTable extends Component {
         <IceContainer>
           <Table primaryKey="accountName" dataSource={this.props.accountInfos} hasBorder={false} isLoading={this.props.isLoading}>
             <Table.Column
-              width={150}
+              width={100}
               title="账号"
               dataIndex='accountName'
+            />
+            <Table.Column
+              width={100}
+              title="创建者"
+              dataIndex='founder'
             />
             <Table.Column
               width={200}

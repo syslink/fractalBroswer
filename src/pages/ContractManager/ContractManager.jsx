@@ -11,8 +11,8 @@ export default class ContractManager extends Component {
 
   render() {
     return (
-      <div>
-        <ContractEditor />
+      <div style={{height:800, width:800}}>
+        <ContractEditor style={{height:800, width:800}}/>
       </div>
     );
   }

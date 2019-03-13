@@ -35,7 +35,7 @@ import Block from './pages/Block';
 import SearchAsset from './pages/SearchAsset';
 import OperateAsset from './pages/OperateAsset';
 import Transaction from './pages/Transaction';
-import ProducerList from './pages/ProducerList'
+import ProducerList from './pages/ProducerList';
 
 const routerConfig = [
   {
@@ -167,7 +167,7 @@ const routerConfig = [
     path: '/producerList',
     layout: BasicLayout,
     component: ProducerList,
-  }
+  },
 ];
 
 const routerData = getRouterData(routerConfig, asideMenuConfig);

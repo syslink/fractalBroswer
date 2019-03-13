@@ -49,11 +49,15 @@ function parseAction(actionInfo, assetInfo, allAssetInfos, dposInfo){
       break;   
     case actionTypes.UPDATE_ACCOUNT:  
       actionParseInfo['actionType'] = '更新账户';
-      var founder = String.fromCharCode.apply(null, payloadInfo[0]);
-      var chargeRatio = payloadInfo[1].length == 0 ? 0 : payloadInfo[1][0];
-      var publicKey = bytes2Hex(payloadInfo[2]);
-      actionParseInfo['detailInfo'] = '创建者：' + founder + ', 手续费收取比例:' + chargeRatio + '%, 公钥:' + publicKey;
-      actionParseInfo['detailObj'] = {founder: founder, chargeRatio:chargeRatio, publicKey:publicKey};
+      if (payloadInfo.length == 4) {
+        var founder = String.fromCharCode.apply(null, payloadInfo[1]);
+        var chargeRatio = payloadInfo[2].length == 0 ? 0 : payloadInfo[2][0];
+        var publicKey = bytes2Hex(payloadInfo[3]);
+        actionParseInfo['detailInfo'] = '创建者：' + founder + ', 手续费收取比例:' + chargeRatio + '%, 公钥:' + publicKey;
+        actionParseInfo['detailObj'] = {founder: founder, chargeRatio:chargeRatio, publicKey:publicKey};
+      } else {
+        actionParseInfo['detailInfo'] = '未知错误';
+      }
       break;
     case actionTypes.INCREASE_ASSET:
       actionParseInfo['actionType'] = '增发资产';
