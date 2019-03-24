@@ -1,28 +1,29 @@
-import {bindAccountPublicKeyReq, 
-        updateBoundInfoReq, 
-        deleteBoundInfoReq, 
-        getBoundInfoReq, 
-        getKeystoreReq, 
-        createAccountBySystemReq,
-        getAccountInfoReq,} from './api';
+import { bindAccountPublicKeyReq,
+  updateBoundInfoReq,
+  deleteBoundInfoReq,
+  getBoundInfoReq,
+  getKeystoreReq,
+  createAccountBySystemReq,
+  getAccountInfoReq,
+} from './api';
 import { sendTransaction } from '../../api';
-import { saveTxHash, saveTxBothFromAndTo} from '../../utils/utils';
+import { saveTxHash, saveTxBothFromAndTo } from '../../utils/utils';
 import {
-  BIND_ACCOUNT_REQUEST	,
-  BIND_ACCOUNT_SUCCESS	,
-  BIND_ACCOUNT_FAILURE	,
-    
-  UPDATE_BOUND_REQUEST	,
-  UPDATE_BOUND_SUCCESS	,
-  UPDATE_BOUND_FAILURE	,
-    
-  DELETE_BOUND_REQUEST	,
-  DELETE_BOUND_SUCCESS	,
-  DELETE_BOUND_FAILURE	,
-    
-  GET_BOUND_REQUEST	,
-  GET_BOUND_SUCCESS	,
-  GET_BOUND_FAILURE	,
+  BIND_ACCOUNT_REQUEST,
+  BIND_ACCOUNT_SUCCESS,
+  BIND_ACCOUNT_FAILURE,
+
+  UPDATE_BOUND_REQUEST,
+  UPDATE_BOUND_SUCCESS,
+  UPDATE_BOUND_FAILURE,
+
+  DELETE_BOUND_REQUEST,
+  DELETE_BOUND_SUCCESS,
+  DELETE_BOUND_FAILURE,
+
+  GET_BOUND_REQUEST,
+  GET_BOUND_SUCCESS,
+  GET_BOUND_FAILURE,
 
   GET_KEYSTORE_REQUEST,
   GET_KEYSTORE_SUCCESS,
@@ -62,14 +63,13 @@ import {
 
   CLOSE_FAIL_DIALOG,
 
-  RPC_REQUEST_FAILURE,
   CREATE_NEW_ACCOUNT,
 } from './constants';
 
 
 const bindAccountPublicKeyAction = () => {
   return {
-    type: BIND_ACCOUNT_REQUEST
+    type: BIND_ACCOUNT_REQUEST,
   };
 };
 
@@ -80,7 +80,7 @@ const bindAccountPublicKeySuccessAction = (payload) => {
   };
 };
 
-const  bindAccountPublicKeyFailAction = (payload) => {
+const bindAccountPublicKeyFailAction = (payload) => {
   return {
     type: BIND_ACCOUNT_FAILURE,
     result: payload,
@@ -369,72 +369,72 @@ export const bindAccountPublicKey = (params) => {
     dispatch(bindAccountPublicKeyAction());
     try {
       const response = await bindAccountPublicKeyReq(params);
-      if (response.data.hasOwnProperty("result")) {
-          dispatch(bindAccountPublicKeySuccessAction(params));
-      } else if (response.data.hasOwnProperty("error")) {
+      if (Object.prototype.hasOwnProperty.call(response.data, 'result')) {
+        dispatch(bindAccountPublicKeySuccessAction(params));
+      } else if (Object.prototype.hasOwnProperty.call(response.data, 'error')) {
         dispatch(bindAccountPublicKeyFailAction(response.data.error));
       }
       return response.data;
     } catch (error) {
       dispatch(bindAccountPublicKeyFailAction(error));
     }
-  }
-}
+  };
+};
 
 export const deleteBoundInfo = (params) => {
   return async (dispatch) => {
     dispatch(deleteBoundInfoAction());
     try {
       const response = await deleteBoundInfoReq(params);
-      if (response.data.hasOwnProperty("result")) {
+      if (Object.prototype.hasOwnProperty.call(response.data, 'result')) {
         dispatch(deleteBoundInfoSuccessAction(...params));
-      } else if (response.data.hasOwnProperty("error")) {
+      } else if (Object.prototype.hasOwnProperty.call(response.data, 'error')) {
         dispatch(deleteBoundInfoFailAction(response.data.error));
       }
       return response.data;
     } catch (error) {
       dispatch(deleteBoundInfoFailAction(error));
     }
-  }
-}
+  };
+};
 
 export const updateBoundInfo = (params) => {
   return async (dispatch) => {
     dispatch(updateBoundInfoAction());
     try {
       const response = await updateBoundInfoReq(params);
-      if (response.data.hasOwnProperty("result")) {
+      if (Object.prototype.hasOwnProperty.call(response.data, 'result')) {
         dispatch(updateBoundInfoSuccessAction(response.data.result));
-      } else if (response.data.hasOwnProperty("error")) {
+      } else if (Object.prototype.hasOwnProperty.call(response.data, 'error')) {
         dispatch(updateBoundInfoFailAction(response.data.error));
       }
       return response.data;
     } catch (error) {
       dispatch(updateBoundInfoFailAction(error));
     }
-  }
-}
+  };
+};
 
 export const getBoundInfo = (params) => {
   return async (dispatch) => {
     dispatch(getBoundInfoAction());
     try {
       const response = await getBoundInfoReq(params);
-      if (response.data.hasOwnProperty("result")) {
-        if (response.data.result != undefined) {
+      if (Object.prototype.hasOwnProperty.call(response.data, 'result')) {
+        if (response.data.result !== undefined) {
           dispatch(getBoundInfoSuccessAction(response.data.result));
         } else {
           dispatch(getBoundInfoSuccessAction([]));
         }
-      } else if (response.data.hasOwnProperty("error")) {
+      } else if (Object.prototype.hasOwnProperty.call(response.data, 'error')) {
         dispatch(getBoundInfoFailAction(response.data.error));
       }
       return response.data;
     } catch (error) {
       dispatch(getBoundInfoFailAction(error));
     }
-  }
-}
+  };
+};
 
 // 获取keystore信息成功后便会查询所有的账号绑定信息
 export const getKeystore = (params) => {
@@ -442,52 +442,53 @@ export const getKeystore = (params) => {
     dispatch(getKeystoreAction());
     try {
       const response = await getKeystoreReq(params);
-      if (response.data.hasOwnProperty("result")) {
+      if (Object.prototype.hasOwnProperty.call(response.data, 'result')) {
         dispatch(getKeystoreSuccessAction(response.data.result));
-        var publicKeys = []
-        for (let keyInfo of response.data.result) {
+        const publicKeys = [];
+        // eslint-disable-next-line no-restricted-syntax
+        for (const keyInfo of response.data.result) {
           publicKeys.push(keyInfo.publicKey);
         }
         dispatch(getBoundInfo([[...publicKeys]]));
-      } else if (response.data.hasOwnProperty("error")) {
+      } else if (Object.prototype.hasOwnProperty.call(response.data, 'error')) {
         dispatch(getKeystoreFailAction(response.data.error));
       }
       return response.data;
     } catch (error) {
       dispatch(getKeystoreFailAction(error));
     }
-  }
-}
+  };
+};
 
-export const openDialogOfCreateAccountBySystem = (params) => {
+export const openDialogOfCreateAccountBySystem = () => {
   return async (dispatch) => {
     dispatch(openDialogOfCreateAccountBySystemAction());
-  }
-}
+  };
+};
 
-export const closeDialogOfCreateAccountBySystem = (params) => {
+export const closeDialogOfCreateAccountBySystem = () => {
   return async (dispatch) => {
     dispatch(closeDialogOfCreateAccountBySystemAction());
-  }
-}
+  };
+};
 
-export const openDialogOfCreateAccountBySelf = (params) => {
+export const openDialogOfCreateAccountBySelf = () => {
   return async (dispatch) => {
     dispatch(openDialogOfCreateAccountBySelfAction());
-  }
-}
+  };
+};
 
-export const closeDialogOfCreateAccountBySelf = (params) => {
+export const closeDialogOfCreateAccountBySelf = () => {
   return async (dispatch) => {
     dispatch(closeDialogOfCreateAccountBySelfAction());
-  }
-}
+  };
+};
 
-export const closeFailDialog = (params) => {
+export const closeFailDialog = () => {
   return async (dispatch) => {
     dispatch(closeFailDialogAction());
-  }
-}
+  };
+};
 
 // 此方法执行成功后需要关闭创建页面
 export const createAccountBySystem = (params) => {
@@ -495,15 +496,15 @@ export const createAccountBySystem = (params) => {
     dispatch(createAccountBySystemAction());
     try {
       const response = await createAccountBySystemReq(params);
-      if (response.status == 200) {
-        if (response.data.code == 0) {
+      if (response.status === 200) {
+        if (response.data.code === 0) {
           saveTxHash(params.accountName, CREATE_NEW_ACCOUNT, response.data.message);
           dispatch(createAccountBySystemSuccessAction(''));
           setTimeout(() => {
             dispatch(getAccountInfo([params.accountName])).then(resp => {
-              if (resp.hasOwnProperty("result")) {
+              if (Object.prototype.hasOwnProperty.call(resp, 'result')) {
                 dispatch(bindAccountPublicKey([resp.result.accountName]));
-              } 
+              }
             });
           }, 3000);
         } else {
@@ -516,27 +517,27 @@ export const createAccountBySystem = (params) => {
     } catch (error) {
       dispatch(createAccountBySystemFailAction(error));
     }
-  }
-}
+  };
+};
 
 export const createAccountBySelf = (params) => {
   return async (dispatch) => {
     dispatch(createAccountBySystemAction());
     try {
       const response = await sendTransaction(params);
-      if (response.status == 200) {
+      if (response.status === 200) {
         if (response.data.result != null) {
           saveTxBothFromAndTo(params.accountName, params.toAccountName, params.actionType, response.data.result);
           dispatch(createAccountBySystemSuccessAction(''));
           setTimeout(() => {
             dispatch(getAccountInfo([params.toAccountName])).then(resp => {
-              if (resp.hasOwnProperty("result")) {
+              if (Object.prototype.hasOwnProperty.call(resp, 'result')) {
                 dispatch(bindAccountPublicKey([resp.result.accountName]));
-              } 
+              }
             });
           }, 3000);
         } else {
-          dispatch(createAccountBySystemFailAction(response.data.error.message));
+          dispatch(createAccountBySystemFailAction(response.data.error));
         }
       } else {
         dispatch(createAccountBySystemFailAction(response.status));
@@ -545,137 +546,137 @@ export const createAccountBySelf = (params) => {
     } catch (error) {
       dispatch(createAccountBySystemFailAction(error));
     }
-   }
-}
+  };
+};
 
 export const getAccountInfo = (params) => {
   return async (dispatch) => {
     dispatch(getAccountInfoAction());
     try {
       const response = await getAccountInfoReq(params);
-      if (response.data.hasOwnProperty("result")) {
+      if (Object.prototype.hasOwnProperty.call(response.data, 'result')) {
         dispatch(getAccountInfoSuccessAction(response.data.result));
-      } else if (response.data.hasOwnProperty("error")) {
-        dispatch(getAccountInfoFailAction(response.data.error.message));
+      } else if (Object.prototype.hasOwnProperty.call(response.data, 'error')) {
+        dispatch(getAccountInfoFailAction(response.data.error));
       }
       return response.data;
     } catch (error) {
       dispatch(getAccountInfoFailAction(error));
     }
-  }
-}
+  };
+};
 
 
-export const openDialogOfImportAccount = (params) => {
+export const openDialogOfImportAccount = () => {
   return async (dispatch) => {
     dispatch(openImportAccountDialogAction());
-  }
-}
+  };
+};
 
-export const closeDialogOfImportAccount = (params) => {
+export const closeDialogOfImportAccount = () => {
   return async (dispatch) => {
     dispatch(closeImportAccountDialogAction());
-  }
-}
+  };
+};
 
 export const importAccount = (params) => {
   return async (dispatch) => {
     dispatch(importAccountAction());
     try {
       const response = await getAccountInfoReq(params);
-      
-      if (response.data.hasOwnProperty("result") && response.data.result != null) {
+
+      if (Object.prototype.hasOwnProperty.call(response.data, 'result') && response.data.result != null) {
         dispatch(getAccountInfoSuccessAction(response.data.result));
         dispatch(bindAccountPublicKey([response.data.result.accountName])).then(resp => {
-          if (resp.hasOwnProperty("result")) {
+          if (Object.prototype.hasOwnProperty.call(resp, 'result')) {
             dispatch(importAccountSuccessAction());
-          } else if (resp.hasOwnProperty("error")) {
+          } else if (Object.prototype.hasOwnProperty.call(resp, 'error')) {
             dispatch(importAccountFailAction(resp.error));
           }
         });
-      } else if (response.data.hasOwnProperty("error")) {
+      } else if (Object.prototype.hasOwnProperty.call(response.data, 'error')) {
         dispatch(getAccountInfoFailAction(response.data.error));
-      } else if (response.data.hasOwnProperty("result")) {
+      } else if (Object.prototype.hasOwnProperty.call(response.data, 'result')) {
         dispatch(getAccountInfoFailAction('Account is not exist.'));
-      } 
+      }
       return response.data;
     } catch (error) {
-      dispatch(importAccountFailAction(error.message));
+      dispatch(importAccountFailAction(error));
     }
-  }
-}
+  };
+};
 
-export const openDialogOfTransfer = (params) => {
+export const openDialogOfTransfer = () => {
   return async (dispatch) => {
     dispatch(openTransferDialogAction());
-  }
-}
+  };
+};
 
-export const closeDialogOfTransfer = (params) => {
+export const closeDialogOfTransfer = () => {
   return async (dispatch) => {
     dispatch(closeTransferDialogAction());
-  }
-}
+  };
+};
 
 export const transfer = (params) => {
   return async (dispatch) => {
     dispatch(transferRequestAction());
     try {
       const response = await sendTransaction(params);
-      if (response.status == 200) {
+      if (response.status === 200) {
         if (response.data.result != null) {
           saveTxBothFromAndTo(params.accountName, params.toAccountName, params.actionType, response.data.result);
           dispatch(transferSuccessAction(response.data.result));
         } else {
-          dispatch(transferFailAction(response.data.error.message));
+          dispatch(transferFailAction(response.data.error));
         }
       } else {
         dispatch(transferFailAction(response.status));
       }
       return response.data;
     } catch (error) {
-      dispatch(transferFailAction(error.message));
+      dispatch(transferFailAction(error));
     }
-   }
-}
+  };
+};
 
-export const openDialogOfUpdatePK = (params) => {
+export const openDialogOfUpdatePK = () => {
   return async (dispatch) => {
     dispatch(openUpdatePKDialogAction());
-  }
-}
+  };
+};
 
-export const closeDialogOfUpdatePK = (params) => {
+export const closeDialogOfUpdatePK = () => {
   return async (dispatch) => {
     dispatch(closeUpdatePKDialogAction());
-  }
-}
+  };
+};
 
 export const updatePK = (params) => {
   return async (dispatch) => {
     dispatch(updatePKRequestAction());
     try {
       const response = await sendTransaction(params);
-      if (response.status == 200) {
+      if (response.status === 200) {
         if (response.data.result != null) {
           saveTxHash(params.accountName, params.actionType, response.data.result);
           dispatch(updatePKSuccessAction(response.data.result));
           setTimeout(() => {
             dispatch(getAccountInfo([params.accountName])).then(resp => {
-              if (resp.hasOwnProperty("result") && resp.result != null) {
+              if (Object.prototype.hasOwnProperty.call(resp, 'result') && resp.result != null) {
                 dispatch(bindAccountPublicKey([resp.result.accountName]));
-              } 
+              }
             });
           }, 3000);
         } else {
-          dispatch(updatePKFailAction(response.data.error.message));
+          dispatch(updatePKFailAction(response.data.error));
         }
       } else {
         dispatch(updatePKFailAction(response.status));
       }
       return response.data;
     } catch (error) {
-      dispatch(updatePKFailAction(error.message));
+      dispatch(updatePKFailAction(error));
     }
-   }
-}
+  };
+};

@@ -1,21 +1,12 @@
+/* eslint-disable no-restricted-syntax */
+/* eslint-disable no-await-in-loop */
 import React, { Component } from 'react';
 import { Table, Pagination, Search, Grid, Feedback } from '@icedesign/base';
 import IceContainer from '@icedesign/container';
-import TableFilter from './TableFilter';
-import {getAccountInfo, getAssetInfoById, getAssetInfoByName} from '../../api'
-import BigNumber from "bignumber.js"
-const { Row, Col } = Grid;
+import BigNumber from 'bignumber.js';
+import { getAccountInfo, getAssetInfoById, getAssetInfoByName } from '../../api';
 
-const getData = () => {
-  return Array.from({ length: 10 }).map((item, index) => {
-    return {
-      assetId: `${index}`,
-      assetType: '点击事件',
-      assetName: `1000${index}`,
-      assetBalance: `986262${index}`
-    };
-  });
-};
+const { Row, Col } = Grid;
 
 export default class SearchTable extends Component {
   static displayName = 'SearchTable';
@@ -37,12 +28,12 @@ export default class SearchTable extends Component {
 
 
   getReadableNumber = (value, assetID) => {
-    let {assetInfos} = this.state;
-    var decimals = assetInfos[assetID].decimals;
+    const { assetInfos } = this.state;
+    const decimals = assetInfos[assetID].decimals;
 
-    var renderValue = new BigNumber(value);
+    let renderValue = new BigNumber(value);
     renderValue = renderValue.shiftedBy(decimals * -1);
-    
+
     BigNumber.config({ DECIMAL_PLACES: 6 });
     renderValue = renderValue.toString(10);
     return renderValue;
@@ -50,37 +41,37 @@ export default class SearchTable extends Component {
 
   onSearch = async (value) => {
     this.state.balanceInfos = [];
-    var response = await getAccountInfo([value.key]);
-    if (response.data.hasOwnProperty("result") && response.data.result != null) {
-      var assetBalances = response.data.result.balances;
-      for (let assetBalance of assetBalances) {
-        var resp = await getAssetInfoById([assetBalance.assetID]);
+    const response = await getAccountInfo([value.key]);
+    if (Object.prototype.hasOwnProperty.call(response.data, 'result') && response.data.result != null) {
+      const assetBalances = response.data.result.balances;
+      for (const assetBalance of assetBalances) {
+        const resp = await getAssetInfoById([assetBalance.assetID]);
         this.state.assetInfos[assetBalance.assetID] = resp.data.result;
-        var readableValue = this.getReadableNumber(assetBalance.balance, assetBalance.assetID);
-        assetBalance.balance = readableValue + ' ' + resp.data.result.symbol + '    [' + assetBalance.balance + ']';
+        const readableValue = this.getReadableNumber(assetBalance.balance, assetBalance.assetID);
+        assetBalance.balance = `${readableValue} ${resp.data.result.symbol} [${assetBalance.balance}]`;
         this.state.balanceInfos.push(assetBalance);
       }
       this.setState({
         balanceInfos: this.state.balanceInfos,
         balanceInfosOnePage: this.state.balanceInfos.slice(0, this.state.onePageNum),
       });
-    } if (response.data.hasOwnProperty("result") && response.data.result == null) {
+    } else if (Object.prototype.hasOwnProperty.call(response.data, 'result') && response.data.result == null) {
       Feedback.toast.error('无此账户信息');
-    } else if (response.data.hasOwnProperty("error")) {
+    } else if (Object.prototype.hasOwnProperty.call(response.data, 'error')) {
       Feedback.toast.error(response.data.error.message);
     }
   }
 
   onChange = (currentPage) => {
-    var startNo = (currentPage - 1) * this.state.onePageNum;
-    var balanceInfos = this.state.balanceInfos.slice(startNo, startNo + this.state.onePageNum);
+    const startNo = (currentPage - 1) * this.state.onePageNum;
+    const balanceInfos = this.state.balanceInfos.slice(startNo, startNo + this.state.onePageNum);
     this.setState({
       balanceInfosOnePage: balanceInfos,
     });
   }
-  convertNumber = (amount, decimals) => {
-    var amount = new BigNumber(amount);
-    amount = amount.shiftedBy(parseInt(decimals * -1)).toNumber();
+  convertNumber = (number, decimals) => {
+    let amount = new BigNumber(number);
+    amount = amount.shiftedBy(parseInt(decimals * -1, 10)).toNumber();
     return amount;
   }
   convertAssetNumber = (assetInfo) => {
@@ -90,27 +81,27 @@ export default class SearchTable extends Component {
     return assetInfo;
   }
   onAssetSearch = async (value) => {
-    var assetId = value.key;
-    if (this.state.assetInfos[assetId] != undefined) {
-      this.setState({assetInfo: [this.state.assetInfos[assetId]]});
+    const assetId = value.key;
+    if (this.state.assetInfos[assetId] !== undefined) {
+      this.setState({ assetInfo: [this.state.assetInfos[assetId]] });
     } else {
-      var resp = await getAssetInfoById([parseInt(assetId)]);
-      if (resp.data.hasOwnProperty("result") && resp.data.result != null) {
-        var assetInfo = resp.data.result;
+      let resp = await getAssetInfoById([parseInt(assetId, 10)]);
+      if (Object.prototype.hasOwnProperty.call(resp.data, 'result') && resp.data.result != null) {
+        let assetInfo = resp.data.result;
         assetInfo = this.convertAssetNumber(assetInfo);
         this.setState({
-          assetInfo: [assetInfo]});
+          assetInfo: [assetInfo] });
       } else {
-        var assetName = assetId;
+        const assetName = assetId;
         resp = await getAssetInfoByName([assetName]);
-        if (resp.data.hasOwnProperty("result") && resp.data.result != null) {
-          var assetInfo = resp.data.result;
+        if (Object.prototype.hasOwnProperty.call(resp.data, 'result') && resp.data.result != null) {
+          let assetInfo = resp.data.result;
           assetInfo = this.convertAssetNumber(assetInfo);
           this.setState({
-            assetInfo: [assetInfo]});
-        } if (resp.data.hasOwnProperty("result") && resp.data.result == null) {
+            assetInfo: [assetInfo] });
+        } if (Object.prototype.hasOwnProperty.call(resp.data, 'result') && resp.data.result == null) {
           Feedback.toast.error('无此资产信息');
-        } else if (resp.data.hasOwnProperty("error")) {
+        } else if (Object.prototype.hasOwnProperty.call(resp.data, 'error')) {
           Feedback.toast.error(resp.data.error.message);
         }
       }
@@ -124,12 +115,12 @@ export default class SearchTable extends Component {
           <IceContainer>
             <Row style={{ justifyContent: 'center' }}>
               <Col span="24" s="10" l="10">
-                  <Search
-                      size="large"
-                      autoWidth="true"
-                      onSearch={this.onSearch.bind(this)}
-                      placeholder="用户账号"
-                  />
+                <Search
+                  size="large"
+                  autoWidth="true"
+                  onSearch={this.onSearch.bind(this)}
+                  placeholder="用户账号"
+                />
               </Col>
             </Row>
           </IceContainer>
@@ -140,8 +131,8 @@ export default class SearchTable extends Component {
               hasBorder={false}
               style={{ padding: '0 20px 20px' }}
             >
-              <Table.Column title="资产ID" dataIndex="assetID" width={50}/>
-              <Table.Column title="金额" dataIndex="balance" width={200}/>
+              <Table.Column title="资产ID" dataIndex="assetID" width={50} />
+              <Table.Column title="金额" dataIndex="balance" width={200} />
             </Table>
             <Pagination
               style={styles.pagination}
@@ -156,12 +147,12 @@ export default class SearchTable extends Component {
           <IceContainer>
             <Row style={{ justifyContent: 'center' }}>
               <Col span="24" s="10" l="10">
-                  <Search
-                      size="large"
-                      autoWidth="true"
-                      onSearch={this.onAssetSearch.bind(this)}
-                      placeholder="资产ID/资产名称"
-                  />
+                <Search
+                  size="large"
+                  autoWidth="true"
+                  onSearch={this.onAssetSearch.bind(this)}
+                  placeholder="资产ID/资产名称"
+                />
               </Col>
             </Row>
           </IceContainer>
@@ -172,15 +163,15 @@ export default class SearchTable extends Component {
               hasBorder={false}
               style={{ padding: '0 20px 20px' }}
             >
-              <Table.Column title="资产ID" dataIndex="assetId" width={50}/>
-              <Table.Column title="名称" dataIndex="assetName" width={50}/>
-              <Table.Column title="符号" dataIndex="symbol" width={50}/>
-              <Table.Column title="已发行量" dataIndex="amount" width={50}/>
-              <Table.Column title="精度" dataIndex="decimals" width={50}/>
-              <Table.Column title="创建人" dataIndex="founder" width={50}/>
-              <Table.Column title="管理者" dataIndex="owner" width={50}/>
-              <Table.Column title="增发量" dataIndex="addIssue" width={50}/>
-              <Table.Column title="资产上限" dataIndex="upperLimit" width={50}/>
+              <Table.Column title="资产ID" dataIndex="assetId" width={50} />
+              <Table.Column title="名称" dataIndex="assetName" width={50} />
+              <Table.Column title="符号" dataIndex="symbol" width={50} />
+              <Table.Column title="已发行量" dataIndex="amount" width={50} />
+              <Table.Column title="精度" dataIndex="decimals" width={50} />
+              <Table.Column title="创建人" dataIndex="founder" width={50} />
+              <Table.Column title="管理者" dataIndex="owner" width={50} />
+              <Table.Column title="增发量" dataIndex="addIssue" width={50} />
+              <Table.Column title="资产上限" dataIndex="upperLimit" width={50} />
             </Table>
           </IceContainer>
         </IceContainer>

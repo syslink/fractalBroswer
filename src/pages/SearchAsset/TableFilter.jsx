@@ -1,12 +1,12 @@
 /* eslint react/no-string-refs:0 */
 import React, { Component } from 'react';
-import { Grid, Input } from '@icedesign/base';
-import CustomCombobox from './CustomCombobox'
+import { Grid } from '@icedesign/base';
 import {
   FormBinderWrapper as IceFormBinderWrapper,
   FormBinder as IceFormBinder,
   FormError as IceFormError,
 } from '@icedesign/form-binder';
+import CustomCombobox from './CustomCombobox';
 
 const { Row, Col } = Grid;
 
@@ -23,7 +23,7 @@ export default class Filter extends Component {
       value: {
         blockHeight: 'latest',
         userAddr: '',
-        assetId: ''
+        assetId: '',
       },
     };
     this.formChange = this.formChange.bind(this);
@@ -39,7 +39,7 @@ export default class Filter extends Component {
 
   onChange(value) {
     this.setState({
-      value
+      value,
     });
   }
   render() {
@@ -54,15 +54,16 @@ export default class Filter extends Component {
           <Col l="8">
             <div style={styles.formItem}>
               <span style={styles.formLabel}>Block Height：</span>
-              <IceFormBinder required 
-                             pattern="\b(latest|earliest|pending|\d+)\b" 
-                             message="Required!">
+              <IceFormBinder required
+                pattern="\b(latest|earliest|pending|\d+)\b"
+                message="Required!"
+              >
                 <CustomCombobox
-                  name="blockHeight" 
-                  dataSource = {[{label:"latest", value:"latest"},
-                                {label:"earliest", value:"earliest"},
-                                {label:"pending", value:"pending"}]}
-                /> 
+                  name="blockHeight"
+                  dataSource={[{ label: 'latest', value: 'latest' },
+                                { label: 'earliest', value: 'earliest' },
+                                { label: 'pending', value: 'pending' }]}
+                />
               </IceFormBinder>
               <div style={styles.formError}>
                 <IceFormError name="blockHeight" />
@@ -74,9 +75,9 @@ export default class Filter extends Component {
               <span style={styles.formLabel}>User Address：</span>
               <IceFormBinder required triggerType="onBlur" message="Required!">
                 <CustomCombobox
-                    name="userAddr" 
-                    dataSource = {[]}
-                  /> 
+                  name="userAddr"
+                  dataSource={[]}
+                />
               </IceFormBinder>
               <div style={styles.formError}>
                 <IceFormError name="userAddr" />
@@ -87,10 +88,10 @@ export default class Filter extends Component {
             <div style={styles.formItem}>
               <span style={styles.formLabel}>Asset Id:</span>
               <IceFormBinder triggerType="onBlur">
-                 <CustomCombobox
-                    name="assetId" 
-                    dataSource = {[]}
-                  /> 
+                <CustomCombobox
+                  name="assetId"
+                  dataSource={[]}
+                />
               </IceFormBinder>
               <div style={styles.formError}>
                 <IceFormError name="assetId" />

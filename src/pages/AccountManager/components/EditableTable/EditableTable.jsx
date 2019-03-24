@@ -1,33 +1,34 @@
+/* eslint-disable eqeqeq */
+/* eslint-disable no-await-in-loop */
+/* eslint-disable no-restricted-syntax */
 import React, { Component } from 'react';
 import IceContainer from '@icedesign/container';
-import { Table, Button, Select } from '@icedesign/base';
+import { Table, Button, Select, Input, Dialog, Feedback } from '@icedesign/base';
+import { Tag, Balloon } from '@alifd/next';
+
+import { connect } from 'react-redux';
+import { compose } from 'redux';
+import BigNumber from 'bignumber.js';
+
+import { encode } from 'rlp';
 import CellEditor from './CellEditor';
 import './EditableTable.scss';
-import { Input, Dialog, Feedback } from '@icedesign/base';
-import { Tag, Balloon } from '@alifd/next';
 
 import * as txParser from '../../../../utils/transactionParser';
 
 import injectReducer from '../../../../utils/injectReducer';
 
-import { bindAccountAddr, deleteBoundInfo, updateBoundInfo, 
-         getBoundInfo, getKeystore, createAccountBySystem, 
-         getAccountInfo, createAccountBySelf, importAccount, transfer,
-         openDialogOfCreateAccountBySelf, openDialogOfCreateAccountBySystem, openDialogOfTransfer, openDialogOfImportAccount,
-         closeDialogOfCreateAccountBySelf, closeDialogOfCreateAccountBySystem, closeDialogOfTransfer, closeFailDialog, closeDialogOfImportAccount,
-         openDialogOfUpdatePK, closeDialogOfUpdatePK, updatePK } from '../../actions';
-import {TRANSFER, CREATE_NEW_ACCOUNT, UPDATE_ACCOUNT} from '../../../../utils/constant'
-import {getAssetInfoById, getSuggestionGasPrice, getTransactionByHash, getTransactionReceipt, sendTransaction, getDposInfo} from '../../../../api'
+import { bindAccountAddr, deleteBoundInfo, updateBoundInfo,
+  getBoundInfo, getKeystore, createAccountBySystem,
+  getAccountInfo, createAccountBySelf, importAccount, transfer,
+  openDialogOfCreateAccountBySelf, openDialogOfCreateAccountBySystem, openDialogOfTransfer, openDialogOfImportAccount,
+  closeDialogOfCreateAccountBySelf, closeDialogOfCreateAccountBySystem, closeDialogOfTransfer, closeFailDialog, closeDialogOfImportAccount,
+  openDialogOfUpdatePK, closeDialogOfUpdatePK, updatePK } from '../../actions';
+import { TRANSFER, CREATE_NEW_ACCOUNT, UPDATE_ACCOUNT } from '../../../../utils/constant';
+import { getAssetInfoById, getSuggestionGasPrice, getTransactionByHash, getTransactionReceipt, getDposInfo } from '../../../../api';
 
 import reducer from '../../reducer';
 
-import { connect } from 'react-redux';
-import { compose } from 'redux';
-import BigNumber from "bignumber.js"
-
-import cookie from 'react-cookies'
-import {encode} from 'rlp'
-import { str2Bytes } from '../../../../utils/utils';
 
 class EditableTable extends Component {
   static displayName = 'EditableTable';
@@ -43,30 +44,23 @@ class EditableTable extends Component {
       creator: '',
       fractalAccount: '',
       selfAccount: '',
-      accountReg: new RegExp("^[a-z0-9]{8,16}$"),
+      accountReg: new RegExp('^[a-z0-9]{8,16}$'),
       fractalPublicKey: '',
       selfPublicKey: '',
       otherPublicKey: '',
       email: '',
-      emailReg: new RegExp("^[a-z0-9]+([._\\-]*[a-z0-9])*@([a-z0-9]+[-a-z0-9]*[a-z0-9]+.){1,63}[a-z0-9]+$"),
-      systemAccount: "ftsystemio",
-      emailDisable: false,
+      emailReg: new RegExp('^[a-z0-9]+([._\\-]*[a-z0-9])*@([a-z0-9]+[-a-z0-9]*[a-z0-9]+.){1,63}[a-z0-9]+$'),
       password: '',
-      passwordDisable: false,
-      addresses: [],
       balanceInfos: [],
       assetInfos: {},
-      importAccountVisible: false,
       importAccountName: '',
       assetVisible: false,
       curBalance: {},
       curTransferAsset: {},
       curAccount: '',
       curAccountFTBalance: '',
-      transferFromAccount: '',
       transferToAccount: '',
       transferValue: 0,
-      transferAssetId: 0,
       transferAssetSymbol: '',
       suggestionPrice: 10,
       gasPrice: 0,
@@ -75,18 +69,19 @@ class EditableTable extends Component {
       txInfos: [],
       inputOtherPK: false,
       inputOtherPKStr: '输入其它公钥',
-      successCallback: () => {},
-      errCallback: (error) => {},
+      dposInfo: {},
     };
   }
 
-  // mapStateToProps执行后会调用此函数
-  compoentWillMount() {
-
-  }
-
-  componentDidMount() {
+  componentDidMount = async () => {
     this.props.getKeystore([]);
+
+    let dposInfo = {};
+    const dposResp = await getDposInfo();
+    if (Object.prototype.hasOwnProperty.call(dposResp.data, 'result') && dposResp.data.result != null) {
+      dposInfo = dposResp.data.result;
+    }
+    this.state.dposInfo = dposInfo;
   }
 
   renderOrder = (value, index) => {
@@ -98,16 +93,15 @@ class EditableTable extends Component {
   };
 
   showAssets = async (index) => {
-    const _this = this;
     this.state.curAccount = this.props.accountInfos[index];
-    var balances = this.props.accountInfos[index].balances;
-    for (let balance of balances) {
-      if (_this.state.assetInfos[balance.assetID] == undefined) {
-        var resp = await getAssetInfoById([balance.assetID]);
-        _this.state.assetInfos[balance.assetID] = resp.data.result;
+    const balances = this.props.accountInfos[index].balances;
+    for (const balance of balances) {
+      if (this.state.assetInfos[balance.assetID] === undefined) {
+        const resp = await getAssetInfoById([balance.assetID]);
+        this.state.assetInfos[balance.assetID] = resp.data.result;
       }
-      if (balance.assetID == 1) {
-        _this.state.curAccountFTBalance = balance.balance;
+      if (balance.assetID === 1) {
+        this.state.curAccountFTBalance = balance.balance;
       }
     }
     this.setState({
@@ -121,7 +115,7 @@ class EditableTable extends Component {
 
   //   var renderValue = new BigNumber(value);
   //   renderValue = renderValue.shiftedBy(decimals * -1);
-    
+
   //   BigNumber.config({ DECIMAL_PLACES: 6 });
   //   renderValue = renderValue.toString(10);
   //   return renderValue;
@@ -130,52 +124,45 @@ class EditableTable extends Component {
   showTxs = async (index) => {
     try {
       this.state.curAccount = this.props.accountInfos[index];
-      for (let balance of this.props.accountInfos[index].balances) {
+      for (const balance of this.props.accountInfos[index].balances) {
         if (this.state.assetInfos[balance.assetID] == undefined) {
-          var resp = await getAssetInfoById([balance.assetID]);
-          console.log(resp);
+          const resp = await getAssetInfoById([balance.assetID]);
           this.state.assetInfos[balance.assetID] = resp.data.result;
         }
       }
 
-      var dposInfo;
-      dposInfo = {};
-      var dposResp = await getDposInfo();
-      if (dposResp.data.hasOwnProperty('result') && dposResp.data.result != null) {
-        dposInfo = dposResp.data.result;
-      }
-
-      var txInfoSet = cookie.load(this.state.curAccount.accountName);
+      let txInfoSet = global.localStorage.getItem(this.state.curAccount.accountName);
       if (txInfoSet != undefined) {
-        var txInfos = [];
-        for (let txInfo of txInfoSet) {
-          var txResp = await getTransactionByHash([txInfo.txHash]);
+        txInfoSet = JSON.parse(txInfoSet);
+        const txInfos = [];
+        for (const txInfo of txInfoSet) {
+          const txResp = await getTransactionByHash([txInfo.txHash]);
           if (txResp.data.result != undefined) {
-            var transaction = txResp.data.result;
-            var parsedActions = [];
-            var i = 0;
-            var receiptResp = await getTransactionReceipt([txInfo.txHash]);
-            var actionResults = receiptResp.data.result.actionResults;
-            for (let actionInfo of transaction.actions) {
+            const transaction = txResp.data.result;
+            const parsedActions = [];
+            let i = 0;
+            const receiptResp = await getTransactionReceipt([txInfo.txHash]);
+            const actionResults = receiptResp.data.result.actionResults;
+            for (const actionInfo of transaction.actions) {
               if (this.state.assetInfos[actionInfo.assetID] == undefined) {
-                var resp = await getAssetInfoById([actionInfo.assetID]);
+                const resp = await getAssetInfoById([actionInfo.assetID]);
                 this.state.assetInfos[actionInfo.assetID] = resp.data.result;
               }
-              var parsedAction = txParser.parseAction(actionInfo, this.state.assetInfos[actionInfo.assetID], this.state.assetInfos, dposInfo);
-              parsedAction['result'] = actionResults[i].status == 1 ? '成功' : '失败（' + actionResults[i].error + '）';
-              parsedAction['gasFee'] = actionResults[i].gasUsed + 'aft';
-              parsedAction['gasAllot'] = actionResults[i].gasAllot;
+              const parsedAction = txParser.parseAction(actionInfo, this.state.assetInfos[actionInfo.assetID], this.state.assetInfos, this.state.dposInfo);
+              parsedAction.result = actionResults[i].status == 1 ? '成功' : `失败（${actionResults[i].error}）`;
+              parsedAction.gasFee = `${actionResults[i].gasUsed} aft`;
+              parsedAction.gasAllot = actionResults[i].gasAllot;
               parsedActions.push(parsedAction);
-              i++;
+              i += 1;
             }
-            transaction["actions"] = parsedActions;
-            transaction["date"] = txInfo.date;
+            transaction.actions = parsedActions;
+            transaction.date = txInfo.date;
             txInfos.push(transaction);
           }
         }
         this.setState({
           txVisible: true,
-          txInfos: txInfos,
+          txInfos,
         });
       } else {
         this.setState({
@@ -186,7 +173,6 @@ class EditableTable extends Component {
     } catch (error) {
       console.log(error);
     }
-    
   }
   renderOperation = (value, index) => {
     return (
@@ -212,35 +198,34 @@ class EditableTable extends Component {
 
 
   updatePublicKey = (index) => {
-
     this.state.curAccount = this.props.accountInfos[index];
     this.props.openDialogOfUpdatePK();
   }
 
-  onUpdatePKOK = (index) => {
+  onUpdatePKOK = () => {
     if (this.state.selfPublicKey == '' && this.state.otherPublicKey == '') {
-      Feedback.toast.error("请选择或输入公钥");
+      Feedback.toast.error('请选择或输入公钥');
       return;
     }
     if (this.state.password == '') {
-      Feedback.toast.error("请输入密码");
+      Feedback.toast.error('请输入密码');
       return;
     }
-    var publicKey = this.state.otherPublicKey;
+    let publicKey = this.state.otherPublicKey;
     if (publicKey == '') {
       publicKey = this.state.selfPublicKey;
     }
 
-    var founder = this.state.curAccount.founder;
+    let founder = this.state.curAccount.founder;
     if (founder == '') {
       founder = this.state.curAccount.accountName;
     }
 
-    var rlpData = encode(['', founder, this.state.curAccount.chargeRatio, publicKey])
-    var params = {
+    const rlpData = encode(['', founder, this.state.curAccount.chargeRatio, publicKey]);
+    const params = {
       accountName: this.state.curAccount.accountName,
       actionType: UPDATE_ACCOUNT,
-      data: '0x' + rlpData.toString('hex'),
+      data: `0x${rlpData.toString('hex')}`,
       password: this.state.password,
     };
 
@@ -248,16 +233,15 @@ class EditableTable extends Component {
   }
 
   transfer = async (index) => {
-    var assetID = this.state.balanceInfos[index].assetID;
+    const assetID = this.state.balanceInfos[index].assetID;
 
-    var resp = await getSuggestionGasPrice();
+    const resp = await getSuggestionGasPrice();
     if (resp.data.result > this.state.suggestionPrice) {
       this.state.suggestionPrice = resp.data.result;
     }
 
     this.props.openDialogOfTransfer();
     this.setState({
-      transferAssetId: assetID,
       transferAssetSymbol: this.state.assetInfos[assetID].symbol,
       curTransferAsset: this.state.assetInfos[assetID],
       curBalance: this.state.balanceInfos[index],
@@ -305,295 +289,286 @@ class EditableTable extends Component {
 
   onSystemCreatAccountOK = () => {
     if (!this.state.accountReg.test(this.state.fractalAccount)) {
-      Feedback.toast.error("账号格式错误");
+      Feedback.toast.error('账号格式错误');
       return;
     }
     if (this.state.fractalPublicKey == '') {
-      Feedback.toast.error("请选择公钥");
+      Feedback.toast.error('请选择公钥');
       return;
     }
     if (!this.state.emailReg.test(this.state.email)) {
-      Feedback.toast.error("邮箱格式错误");
+      Feedback.toast.error('邮箱格式错误');
       return;
     }
-    this.props.createAccountBySystem({accountName:this.state.fractalAccount, publicKey:this.state.fractalPublicKey, email:this.state.email});
+    this.props.createAccountBySystem({ accountName: this.state.fractalAccount, publicKey: this.state.fractalPublicKey, email: this.state.email });
   };
 
   onSelfOK = () => {
     if (this.state.creator == '') {
-      Feedback.toast.error("请选择创建者账号");
+      Feedback.toast.error('请选择创建者账号');
       return;
     }
     if (!this.state.accountReg.test(this.state.selfAccount)) {
-      Feedback.toast.error("账号格式错误");
+      Feedback.toast.error('账号格式错误');
       return;
     }
     if (this.state.selfPublicKey == '' && this.state.otherPublicKey == '') {
-      Feedback.toast.error("请选择或输入公钥");
+      Feedback.toast.error('请选择或输入公钥');
       return;
     }
     if (this.state.password == '') {
-      Feedback.toast.error("请输入密码");
+      Feedback.toast.error('请输入密码');
       return;
     }
-    var publicKey = this.state.otherPublicKey;
+    let publicKey = this.state.otherPublicKey;
     if (publicKey == '') {
       publicKey = this.state.selfPublicKey;
     }
-    var rlpData = encode([this.state.selfAccount, this.state.creator, 0, this.state.selfPublicKey]);
+    const rlpData = encode([this.state.selfAccount, this.state.creator, 0, this.state.selfPublicKey]);
 
-    var params = {accountName:this.state.creator, 
-                  data:'0x' + rlpData.toString('hex'), 
-                  actionType:CREATE_NEW_ACCOUNT,
-                  toAccountName:this.state.selfAccount,
-                  password:this.state.password
-                  };
-    this.props.createAccountBySelf(params); 
+    const params = { accountName: this.state.creator,
+      data: `0x${rlpData.toString('hex')}`,
+      actionType: CREATE_NEW_ACCOUNT,
+      toAccountName: this.state.dposInfo.systemName,
+      password: this.state.password,
+    };
+    this.props.createAccountBySelf(params);
   };
 
   onAssetClose = () => {
     this.setState({
-      assetVisible: false
+      assetVisible: false,
     });
   };
 
   onTxClose = () => {
     this.setState({
-      txVisible: false
+      txVisible: false,
     });
   };
 
   onImportAccountOK = () => {
     if (this.state.importAccountName == '') {
-      Feedback.toast.error("请输入账号");
+      Feedback.toast.error('请输入账号');
       return;
     }
     if (!this.state.accountReg.test(this.state.importAccountName)) {
-      Feedback.toast.error("账号格式错误");
+      Feedback.toast.error('账号格式错误');
       return;
     }
     // 导入账户之前，先查询账户存在，然后再导入到节点钱包中
     this.props.importAccount([this.state.importAccountName]);
   };
-  onImportAccountClose = () => {
-    this.setState({
-      importAccountVisible: false
-    });
-  };
 
   onTransferOK = () => {
     if (this.state.transferToAccount == '') {
-      Feedback.toast.error("请输入账号");
+      Feedback.toast.error('请输入账号');
       return;
     }
     if (!this.state.accountReg.test(this.state.transferToAccount)) {
-      Feedback.toast.error("账号格式错误");
+      Feedback.toast.error('账号格式错误');
       return;
     }
-    
+
     if (this.state.transferValue == '') {
-      Feedback.toast.error("请输入转账金额");
+      Feedback.toast.error('请输入转账金额');
       return;
     }
-    
+
     if (this.state.gasPrice == '') {
-      Feedback.toast.error("请输入GAS单价");
+      Feedback.toast.error('请输入GAS单价');
       return;
     }
-    
+
     if (this.state.gasLimit == '') {
-      Feedback.toast.error("请输入愿意支付的最多GAS数量");
+      Feedback.toast.error('请输入愿意支付的最多GAS数量');
       return;
     }
 
     if (this.state.password == '') {
-      Feedback.toast.error("请输入密码");
+      Feedback.toast.error('请输入密码');
       return;
     }
 
-    var decimals = this.state.curTransferAsset.decimals;
-    var value = new BigNumber(this.state.transferValue).shiftedBy(decimals);
+    const decimals = this.state.curTransferAsset.decimals;
+    const value = new BigNumber(this.state.transferValue).shiftedBy(decimals);
 
-    var gasValue = new BigNumber(this.state.gasPrice).multipliedBy(this.state.gasLimit);
+    const gasValue = new BigNumber(this.state.gasPrice).multipliedBy(this.state.gasLimit);
+    const maxValue = new BigNumber(this.state.curBalance.balance);
     if (this.state.curTransferAsset.assetId == 1) {
-      var valueAddGasFee = value.plus(gasValue);
-      var maxValue = new BigNumber(this.state.curBalance.balance);
-      
+      const valueAddGasFee = value.plus(gasValue);
+
       if (valueAddGasFee.comparedTo(maxValue) > 0) {
-        Feedback.toast.error("余额不足");
+        Feedback.toast.error('余额不足');
         return;
       }
     } else {
       if (value.comparedTo(maxValue) > 0) {
-        Feedback.toast.error("余额不足");
+        Feedback.toast.error('余额不足');
         return;
       }
-      var ftValue = new BigNumber(this.state.curAccountFTBalance);
+      const ftValue = new BigNumber(this.state.curAccountFTBalance);
       if (gasValue.comparedTo(ftValue) > 0) {
-        Feedback.toast.error("FT余额不足，可能无法支付足够GAS费");
+        Feedback.toast.error('FT余额不足，可能无法支付足够GAS费');
         return;
       }
     }
 
-    var transferInfo = {"actionType": TRANSFER, 
-                        "accountName": this.state.curAccount.accountName, 
-                        "toAccountName":this.state.transferToAccount, 
-                        "assetId": this.state.curTransferAsset.assetId, 
-                        "gasLimit": new BigNumber(this.state.gasLimit).toNumber(), 
-                        "gasPrice": new BigNumber(this.state.gasPrice).toNumber(), 
-                        "value": value.toNumber(),
-                        "password":this.state.password}
+    const transferInfo = { actionType: TRANSFER,
+      accountName: this.state.curAccount.accountName,
+      toAccountName: this.state.transferToAccount,
+      assetId: this.state.curTransferAsset.assetId,
+      gasLimit: new BigNumber(this.state.gasLimit).toNumber(),
+      gasPrice: new BigNumber(this.state.gasPrice).toNumber(),
+      value: value.toNumber(),
+      password: this.state.password };
 
     // 导入账户之前，先查询账户存在，然后再导入到节点钱包中
     this.props.transfer(transferInfo);
   };
 
-  actionTypeRender = (value, index) => {
-    switch(value) {
+  actionTypeRender = (value) => {
+    switch (value) {
       case 0:
         return '转账';
       case 256:
-      return '创建账户';
+        return '创建账户';
+      default:
+        return '';
     }
   }
-  
-  detailInfoRender = async (txHash, index) => {
-    var resp = await getTransactionByHash([txHash]);
+
+  detailInfoRender = async (txHash) => {
+    const resp = await getTransactionByHash([txHash]);
     return resp;
   }
 
-  txResultRender = async (txHash, index) => {
-    var resp = await getTransactionReceipt([txHash]);
+  txResultRender = async (txHash) => {
+    const resp = await getTransactionReceipt([txHash]);
     return resp;
   }
 
-  handlePasswordChange(v, e) {
+  handlePasswordChange(v) {
     this.state.password = v;
   }
 
-  handleFractalPublicKeyChange(v, e) {
+  handleFractalPublicKeyChange(v) {
     this.state.fractalPublicKey = v;
   }
-  handleEmailChange(v, e) {
+  handleEmailChange(v) {
     this.state.email = v;
   }
-  handleFractalAccountNameChange(v, e) {
+  handleFractalAccountNameChange(v) {
     this.state.fractalAccount = v;
   }
-  handleSelfPublicKeyChange(v, e) {
+  handleSelfPublicKeyChange(v) {
     this.state.selfPublicKey = v;
     if (v == this.state.inputOtherPKStr) {
-      this.setState({inputOtherPK: true});
+      this.setState({ inputOtherPK: true });
     } else {
-      this.setState({inputOtherPK: false, otherPublicKey: ''});
+      this.setState({ inputOtherPK: false, otherPublicKey: '' });
     }
   }
-  handleOthersPublicKeyChange(v, e) {
-    this.setState({otherPublicKey: v});
+  handleOthersPublicKeyChange(v) {
+    this.setState({ otherPublicKey: v });
   }
-  handleSelfAccountNameChange(v, e) {
+  handleSelfAccountNameChange(v) {
     this.state.selfAccount = v;
   }
-  handleImportAccountChange(v, e) {
+  handleImportAccountChange(v) {
     this.state.importAccountName = v;
   }
-  handleTransferToAccountChange(v, e) {
+  handleTransferToAccountChange(v) {
     this.state.transferToAccount = v;
   }
-  handleTransferValueChange(v, e) {
+  handleTransferValueChange(v) {
     this.state.transferValue = v;
   }
-  handleGasPriceChange(v, e) {
+  handleGasPriceChange(v) {
     this.state.gasPrice = v;
   }
-  handleGasLimitChange(v, e) {
+  handleGasLimitChange(v) {
     this.state.gasLimit = v;
-  }
-  handleTransferValueChange(v, e) {
-    this.state.transferValue = v;
   }
 
   onChangeCreatorAccount(value) {
     this.state.creator = value;
   }
-  renderValid = (value, index) => {
+  renderValid = (value) => {
     if (value) {
-        return '有效';
+      return '有效';
     }
     return '无效(因无私钥)';
   }
 
-  symbolRender = (value, index) => {
-    var assetInfo = this.state.assetInfos[value];
+  symbolRender = (value) => {
+    const assetInfo = this.state.assetInfos[value];
     if (assetInfo != undefined) {
       return assetInfo.symbol;
     }
-    var _this = this;
+    const myThis = this;
     getAssetInfoById([value]).then(resp => {
-      _this.state.assetInfos[value] = resp.data.result;
-      _this.setState({
-        assetInfos: _this.state.assetInfos,
+      myThis.state.assetInfos[value] = resp.data.result;
+      myThis.setState({
+        assetInfos: myThis.state.assetInfos,
       });
     });
   }
   balanceRender = (value, index) => {
-    let {assetInfos, balanceInfos} = this.state;
-    var decimals = assetInfos[balanceInfos[index].assetID].decimals;
-    //var baseValue = new BigNumber(10).pow(decimals);
+    const { assetInfos, balanceInfos } = this.state;
+    const decimals = assetInfos[balanceInfos[index].assetID].decimals;
+    // var baseValue = new BigNumber(10).pow(decimals);
 
-    var renderValue = new BigNumber(value);
+    let renderValue = new BigNumber(value);
     renderValue = renderValue.shiftedBy(decimals * -1);
-    
+
     BigNumber.config({ DECIMAL_PLACES: 6 });
     renderValue = renderValue.toString(10);
     return renderValue;
   }
   onClose = () => {
-    this.setState({
-      visible: false
-    });
   };
 
   renderActionType = (value, index, record) => {
-    var parseActions = record.actions;
-    return parseActions.map((item)=>{
-      var defaultTrigger = <Tag type="normal" size="small">{item.actionType}</Tag>;
-      return <Balloon  trigger={defaultTrigger} closable={false}>{item.actionType}</Balloon>;
+    const parseActions = record.actions;
+    return parseActions.map((item) => {
+      const defaultTrigger = <Tag type="normal" size="small">{item.actionType}</Tag>;
+      return <Balloon trigger={defaultTrigger} closable={false}>{item.actionType}</Balloon>;
     });
   }
 
   renderDetailInfo = (value, index, record) => {
-    var parseActions = record.actions;
-    return parseActions.map((item)=>{
-      var defaultTrigger = <Tag type="normal" size="small">{item.detailInfo}</Tag>;
-      return <Balloon  trigger={defaultTrigger} closable={false}>{item.detailInfo}</Balloon>;
+    const parseActions = record.actions;
+    return parseActions.map((item) => {
+      const defaultTrigger = <Tag type="normal" size="small">{item.detailInfo}</Tag>;
+      return <Balloon trigger={defaultTrigger} closable={false}>{item.detailInfo}</Balloon>;
     });
   }
 
   renderResult = (value, index, record) => {
-    var parseActions = record.actions;
-    
-    return parseActions.map((item)=>{
+    const parseActions = record.actions;
+
+    return parseActions.map((item) => {
       console.log(item.result);
-      var defaultTrigger = <Tag type="normal" size="small">{item.result}</Tag>;
-      return <Balloon  trigger={defaultTrigger} closable={false}>{item.result}</Balloon>;
+      const defaultTrigger = <Tag type="normal" size="small">{item.result}</Tag>;
+      return <Balloon trigger={defaultTrigger} closable={false}>{item.result}</Balloon>;
     });
   }
 
   renderGasFee = (value, index, record) => {
-    var parseActions = record.actions;
-    return parseActions.map((item)=>{
-      var defaultTrigger = <Tag type="normal" size="small">{item.gasFee}</Tag>;
-      return <Balloon  trigger={defaultTrigger} closable={false}>{item.gasFee}</Balloon>;
+    const parseActions = record.actions;
+    return parseActions.map((item) => {
+      const defaultTrigger = <Tag type="normal" size="small">{item.gasFee}</Tag>;
+      return <Balloon trigger={defaultTrigger} closable={false}>{item.gasFee}</Balloon>;
     });
   }
 
   renderGasAllot = (value, index, record) => {
-    var parseActions = record.actions;
+    const parseActions = record.actions;
     return parseActions[0].gasAllot.map((gasAllot) => {
-              var defaultTrigger = <Tag type="normal" size="small">{gasAllot.account}->{gasAllot.gas}aft</Tag>;
-              return <Balloon  trigger={defaultTrigger} closable={false}>{gasAllot.account}->{gasAllot.gas}aft</Balloon>;
-            });
+      const defaultTrigger = <Tag type="normal" size="small">{gasAllot.account}=》{gasAllot.gas}aft</Tag>;
+      return <Balloon trigger={defaultTrigger} closable={false}>{gasAllot.account}=》{gasAllot.gas}aft</Balloon>;
+    });
   }
 
   render() {
@@ -604,22 +579,22 @@ class EditableTable extends Component {
             <Table.Column
               width={100}
               title="账号"
-              dataIndex='accountName'
+              dataIndex="accountName"
             />
             <Table.Column
               width={100}
               title="创建者"
-              dataIndex='founder'
+              dataIndex="founder"
             />
             <Table.Column
               width={200}
               title="绑定的公钥"
-              dataIndex='publicKey'
+              dataIndex="publicKey"
             />
             <Table.Column
               width={100}
               title="是否有效"
-              dataIndex='valid'
+              dataIndex="valid"
               cell={this.renderValid}
             />
             <Table.Column title="操作" width={350} cell={this.renderOperation} />
@@ -640,10 +615,10 @@ class EditableTable extends Component {
           onCancel={() => this.props.closeDialogOfCreateAccountBySystem()}
           onClose={() => this.props.closeDialogOfCreateAccountBySystem()}
           title="账户创建"
-          footerAlign='center'
+          footerAlign="center"
         >
           <Input hasClear
-            onChange={this.handleFractalAccountNameChange.bind(this)} 
+            onChange={this.handleFractalAccountNameChange.bind(this)}
             style={{ width: 400 }}
             addonBefore="待创建账号"
             size="medium"
@@ -655,19 +630,19 @@ class EditableTable extends Component {
           <br />
           <br />
           <Select
-            style={{width: 400}}
+            style={{ width: 400 }}
             placeholder="选择公钥，此公钥将同账户绑定，账户所有者有权更换"
             onChange={this.handleFractalPublicKeyChange.bind(this)}
-            label={`公钥：`}
+            label="公钥："
           >
-          {
+            {
             this.props.keystoreInfo.map((keystore) => (
               <Select.Option value={keystore.publicKey} lable={keystore.publicKey}>
                 {keystore.publicKey}
               </Select.Option>
             ))
           }
-          
+
           </Select>
           <br />
           <br />
@@ -687,19 +662,19 @@ class EditableTable extends Component {
           onCancel={() => this.props.closeDialogOfCreateAccountBySelf()}
           onClose={() => this.props.closeDialogOfCreateAccountBySelf()}
           title="账户创建"
-          footerAlign='center'
+          footerAlign="center"
         >
           <Select
-            style={{width: 400}}
+            style={{ width: 400 }}
             placeholder="选择您拥有的账户"
             onChange={this.onChangeCreatorAccount.bind(this)}
             dataSource={this.props.accountNames}
-          ></Select>
+          />
           <br />
           <br />
           <Input hasClear
             htmlType="password"
-            onChange={this.handlePasswordChange.bind(this)} 
+            onChange={this.handlePasswordChange.bind(this)}
             style={{ width: 400 }}
             addonBefore="密码"
             size="medium"
@@ -711,7 +686,7 @@ class EditableTable extends Component {
           <br />
           <br />
           <Input hasClear
-            onChange={this.handleSelfAccountNameChange.bind(this)} 
+            onChange={this.handleSelfAccountNameChange.bind(this)}
             style={{ width: 400 }}
             addonBefore="待创建账号"
             size="medium"
@@ -722,25 +697,25 @@ class EditableTable extends Component {
           />
           <br />
           <br />
-            
+
           <Select
-            style={{width: 400}}
+            style={{ width: 400 }}
             placeholder="选择绑定本地已有公钥或在下面输入其它公钥"
             onChange={this.handleSelfPublicKeyChange.bind(this)}
           >
-          {
-            [...this.props.keystoreInfo, {publicKey:this.state.inputOtherPKStr} ].map((keystore) => (
+            {
+            [...this.props.keystoreInfo, { publicKey: this.state.inputOtherPKStr }].map((keystore) => (
               <Select.Option value={keystore.publicKey} lable={keystore.publicKey}>
                 {keystore.publicKey}
               </Select.Option>
             ))
           }
-          
+
           </Select>
           <br />
           <br />
           <Input hasClear
-            onChange={this.handleOthersPublicKeyChange.bind(this)} 
+            onChange={this.handleOthersPublicKeyChange.bind(this)}
             style={{ width: 400 }}
             addonBefore="其它公钥"
             size="medium"
@@ -759,29 +734,31 @@ class EditableTable extends Component {
           onCancel={() => this.props.closeDialogOfUpdatePK()}
           onClose={() => this.props.closeDialogOfUpdatePK()}
           title="更新公钥"
-          footerAlign='center'
+          footerAlign="center"
         >
           <Select
-            style={{width: 400}}
+            style={{ width: 400 }}
             placeholder="选择绑定本地已有公钥或在下面输入其它公钥"
             onChange={this.handleSelfPublicKeyChange.bind(this)}
-            //dataSource={}
+            // dataSource={}
           >
             {
-              [...this.props.keystoreInfo, {publicKey:this.state.inputOtherPKStr}].map((keystore) => {
+              [...this.props.keystoreInfo, { publicKey: this.state.inputOtherPKStr }].map((keystore) => {
                 return (
-                  <Select.Option value={keystore.publicKey} lable={keystore.publicKey} 
-                                 disabled={this.state.curAccount.publicKey == keystore.publicKey}>
+                  <Select.Option value={keystore.publicKey}
+                    lable={keystore.publicKey}
+                    disabled={this.state.curAccount.publicKey == keystore.publicKey}
+                  >
                     {keystore.publicKey}
                   </Select.Option>
-                )
+                );
               }, this)
             }
           </Select>
           <br />
           <br />
           <Input hasClear
-            onChange={this.handleOthersPublicKeyChange.bind(this)} 
+            onChange={this.handleOthersPublicKeyChange.bind(this)}
             style={{ width: 400 }}
             addonBefore="其它公钥"
             size="medium"
@@ -795,7 +772,7 @@ class EditableTable extends Component {
           <br />
           <Input hasClear
             htmlType="password"
-            onChange={this.handlePasswordChange.bind(this)} 
+            onChange={this.handlePasswordChange.bind(this)}
             style={{ width: 400 }}
             addonBefore="密码"
             size="medium"
@@ -809,39 +786,39 @@ class EditableTable extends Component {
         <Dialog
           visible={this.state.msgVisible}
           title="通知"
-          footerActions='ok'
-          footerAlign='center'
-          closeable='true'
+          footerActions="ok"
+          footerAlign="center"
+          closeable="true"
           onOk={this.onMsgClose}
           onCancel={this.onMsgClose}
           onClose={this.onMsgClose}
         >
           {this.state.msgContent}
-        </Dialog>  
+        </Dialog>
         <Dialog
           visible={this.props.failed}
           title="错误信息"
-          footerActions='ok'
-          footerAlign='center'
-          closeable='true'
+          footerActions="ok"
+          footerAlign="center"
+          closeable="true"
           onOk={this.onClose.bind(this)}
           onCancel={this.onClose.bind(this)}
           onClose={this.onClose.bind(this)}
         >
           {this.props.failInfo}
-        </Dialog>  
+        </Dialog>
         <Dialog
           visible={this.props.importAccountVisible}
           title="导入账户"
-          footerActions='ok'
-          footerAlign='center'
-          closeable='true'
+          footerActions="ok"
+          footerAlign="center"
+          closeable="true"
           onOk={this.onImportAccountOK.bind(this)}
           onCancel={() => this.props.closeDialogOfImportAccount()}
           onClose={() => this.props.closeDialogOfImportAccount()}
         >
           <Input hasClear
-            onChange={this.handleImportAccountChange.bind(this)} 
+            onChange={this.handleImportAccountChange.bind(this)}
             style={{ width: 400 }}
             addonBefore="账号"
             size="medium"
@@ -850,49 +827,49 @@ class EditableTable extends Component {
             hasLimitHint
             onPressEnter={this.onImportAccountOK.bind(this)}
           />
-        </Dialog>  
+        </Dialog>
 
         <Dialog
           style={{ width: 450 }}
           visible={this.state.assetVisible}
           title="资产信息"
-          footerActions='ok'
-          footerAlign='center'
-          closeable='true'
+          footerActions="ok"
+          footerAlign="center"
+          closeable="true"
           onOk={this.onAssetClose.bind(this)}
           onCancel={this.onAssetClose.bind(this)}
           onClose={this.onAssetClose.bind(this)}
         >
           <div className="editable-table">
             <IceContainer>
-              <Table primaryKey="assetID" dataSource={this.state.balanceInfos} hasBorder={false} resizable={true}>
-                <Table.Column title="资产ID" dataIndex="assetID" width={100}/>
+              <Table primaryKey="assetID" dataSource={this.state.balanceInfos} hasBorder={false} resizable>
+                <Table.Column title="资产ID" dataIndex="assetID" width={100} />
                 <Table.Column title="资产符号" dataIndex="assetID" width={100} cell={this.symbolRender.bind(this)} />
-                <Table.Column title="可用金额" dataIndex="balance" width={100} cell={this.balanceRender.bind(this)}/>
-                <Table.Column title="操作" width={150} cell={this.assetRender.bind(this)}/>
+                <Table.Column title="可用金额" dataIndex="balance" width={100} cell={this.balanceRender.bind(this)} />
+                <Table.Column title="操作" width={150} cell={this.assetRender.bind(this)} />
               </Table>
             </IceContainer>
           </div>
-        </Dialog>  
+        </Dialog>
 
         <Dialog
           style={{ width: 1000 }}
           visible={this.state.txVisible}
           title="交易信息"
-          footerActions='ok'
-          footerAlign='center'
-          closeable='true'
+          footerActions="ok"
+          footerAlign="center"
+          closeable="true"
           onOk={this.onTxClose.bind(this)}
           onCancel={this.onTxClose.bind(this)}
           onClose={this.onTxClose.bind(this)}
         >
           <div className="editable-table">
             <IceContainer>
-              <Table primaryKey="date" dataSource={this.state.txInfos} hasBorder={false} resizable={true}>
-                <Table.Column title="时间" dataIndex="date" width={90}/>
+              <Table primaryKey="date" dataSource={this.state.txInfos} hasBorder={false} resizable>
+                <Table.Column title="时间" dataIndex="date" width={90} />
                 <Table.Column title="交易Hash" dataIndex="txHash" width={150} />
 
-                <Table.Column title="类型" dataIndex="parsedActions" width={150} cell={this.renderActionType.bind(this)}/>
+                <Table.Column title="类型" dataIndex="parsedActions" width={150} cell={this.renderActionType.bind(this)} />
                 <Table.Column title="详情" dataIndex="parsedActions" width={200} cell={this.renderDetailInfo.bind(this)} />
                 <Table.Column title="结果" dataIndex="parsedActions" width={100} cell={this.renderResult.bind(this)} />
                 <Table.Column title="总手续费" dataIndex="parsedActions" width={100} cell={this.renderGasFee.bind(this)} />
@@ -904,20 +881,20 @@ class EditableTable extends Component {
               </Table>
             </IceContainer>
           </div>
-        </Dialog>  
+        </Dialog>
 
         <Dialog
           visible={this.props.transferVisible}
           title="转账"
-          footerActions='ok'
-          footerAlign='center'
-          closeable='true'
+          footerActions="ok"
+          footerAlign="center"
+          closeable="true"
           onOk={this.onTransferOK.bind(this)}
           onCancel={() => this.props.closeDialogOfTransfer()}
           onClose={() => this.props.closeDialogOfTransfer()}
         >
           <Input hasClear
-            onChange={this.handleTransferToAccountChange.bind(this)} 
+            onChange={this.handleTransferToAccountChange.bind(this)}
             style={{ width: 400 }}
             addonBefore="收款账号"
             size="medium"
@@ -928,9 +905,9 @@ class EditableTable extends Component {
           <br />
           <br />
           <Input hasClear
-            onChange={this.handleTransferValueChange.bind(this)} 
+            onChange={this.handleTransferValueChange.bind(this)}
             style={{ width: 400 }}
-            addonBefore={"金额"}
+            addonBefore="金额"
             addonAfter={this.state.transferAssetSymbol}
             size="medium"
             hasLimitHint
@@ -938,22 +915,22 @@ class EditableTable extends Component {
           <br />
           <br />
           <Input hasClear
-            onChange={this.handleGasPriceChange.bind(this)} 
+            onChange={this.handleGasPriceChange.bind(this)}
             style={{ width: 400 }}
-            addonBefore='GAS单价'
-            addonAfter='aft'
+            addonBefore="GAS单价"
+            addonAfter="aft"
             size="medium"
-            placeholder={"建议值：" + this.state.suggestionPrice}
+            placeholder={`建议值：${this.state.suggestionPrice}`}
             hasLimitHint
           />
-          <br/>
+          <br />
           1aft = 10<sup>-18</sup>ft
           <br />
           <br />
           <Input hasClear
-            onChange={this.handleGasLimitChange.bind(this)} 
+            onChange={this.handleGasLimitChange.bind(this)}
             style={{ width: 400 }}
-            addonBefore={"GAS数量上限"}
+            addonBefore="GAS数量上限"
             size="medium"
             hasLimitHint
           />
@@ -961,7 +938,7 @@ class EditableTable extends Component {
           <br />
           <Input hasClear
             htmlType="password"
-            onChange={this.handlePasswordChange.bind(this)} 
+            onChange={this.handlePasswordChange.bind(this)}
             style={{ width: 400 }}
             addonBefore="密码"
             size="medium"
@@ -969,21 +946,22 @@ class EditableTable extends Component {
             maxLength={20}
             hasLimitHint
             placeholder="此密码与付款账户绑定的公私钥相对应"
+            onPressEnter={this.onTransferOK.bind(this)}
           />
-        </Dialog>  
+        </Dialog>
 
         <Dialog
           visible={this.props.failInfo != ''}
           title="错误信息"
-          footerActions='ok'
-          footerAlign='center'
-          closeable='true'
+          footerActions="ok"
+          footerAlign="center"
+          closeable="true"
           onOk={() => this.props.closeFailDialog()}
           onCancel={() => this.props.closeFailDialog()}
           onClose={() => this.props.closeFailDialog()}
         >
           {this.props.failInfo}
-        </Dialog>  
+        </Dialog>
       </div>
     );
   }
@@ -1001,12 +979,12 @@ const styles = {
 };
 
 const mapDispatchToProps = {
-  bindAccountAddr, 
-  deleteBoundInfo, 
-  updateBoundInfo, 
-  getBoundInfo, 
-  getKeystore, 
-  createAccountBySystem, 
+  bindAccountAddr,
+  deleteBoundInfo,
+  updateBoundInfo,
+  getBoundInfo,
+  getKeystore,
+  createAccountBySystem,
   getAccountInfo,
   createAccountBySelf,
   importAccount,
@@ -1020,23 +998,23 @@ const mapDispatchToProps = {
   closeFailDialog,
   openDialogOfImportAccount,
   closeDialogOfImportAccount,
-  openDialogOfUpdatePK, 
-  closeDialogOfUpdatePK, 
-  updatePK
+  openDialogOfUpdatePK,
+  closeDialogOfUpdatePK,
+  updatePK,
 };
 
 
 // 参数state就是redux提供的全局store，而keystoreInfo会成为本组件的this.props的其中一个成员
 const mapStateToProps = (state) => {
-  console.log("mapStateToProps:" + state.accountManager.accountInfos.length + "--" + state.accountManager.accountInfos);
-  var accountNameList = []
+  console.log(`mapStateToProps:${state.accountManager.accountInfos.length}--${state.accountManager.accountInfos}`);
+  const accountNameList = [];
   state.accountManager.accountInfos.map(item => accountNameList.push(item.accountName));
 
-  var publicKeyList = []
+  const publicKeyList = [];
   state.accountManager.keystoreInfo.map(item => publicKeyList.push(item.publicKey));
 
 
-  return { 
+  return {
     publicKeys: publicKeyList,
     keystoreInfo: state.accountManager.keystoreInfo,
     accountNames: accountNameList,

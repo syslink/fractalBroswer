@@ -1,50 +1,49 @@
+/* eslint-disable prefer-template */
 /* eslint jsx-a11y/no-noninteractive-element-interactions:0 */
 import React, { PureComponent } from 'react';
-import { Icon, Input, Dialog, Feedback, Search } from '@icedesign/base';
-import IceImg from '@icedesign/img';
+import { Icon, Input, Dialog, Feedback } from '@icedesign/base';
 import Layout from '@icedesign/layout';
 import Menu from '@icedesign/menu';
 import FoundationSymbol from 'foundation-symbol';
+import { Button, Balloon } from '@alifd/next';
+import cookie from 'react-cookies';
+import axios from 'axios';
+import { createHashHistory } from 'history';
 import cx from 'classnames';
 import { Link } from 'react-router-dom';
 import { headerMenuConfig } from '../../menuConfig';
 import Logo from '../Logo';
-import { Tag, Button, Balloon } from '@alifd/next';
-import cookie from 'react-cookies'
-import axios from 'axios';
-import { createHashHistory } from 'history'
 
-export const history = createHashHistory()
+export const history = createHashHistory();
 
 export default class Header extends PureComponent {
-
   constructor(props) {
     super(props);
-    var ip = '127.0.0.1';
-    var port = 8545;
-    var chainId = 1;
-    var nodeInfoCookie = cookie.load("nodeInfo");
+    let ip = '127.0.0.1';
+    let port = 8545;
+    let chainId = 1;
+    const nodeInfoCookie = cookie.load('nodeInfo');
 
-    if (nodeInfoCookie != null && nodeInfoCookie != '') {
-      var nodeInfos = nodeInfoCookie.split('/')[2].split(':');
+    if (nodeInfoCookie != null && nodeInfoCookie !== '') {
+      const nodeInfos = nodeInfoCookie.split('/')[2].split(':');
       ip = nodeInfos[0];
       port = nodeInfos[1];
     }
 
-    var chainIdCookie = cookie.load("chainId");
-    if (chainIdCookie != null && chainIdCookie != '') {
+    const chainIdCookie = cookie.load('chainId');
+    if (chainIdCookie != null && chainIdCookie !== '') {
       chainId = chainIdCookie;
     }
     this.state = {
       nodeConfigVisible: false,
-      ip: ip,
-      port: port,
-      nodeInfo: "http://" + ip + ":" + port,
-      chainId: chainId,
+      ip,
+      port,
+      nodeInfo: 'http://' + ip + ':' + port,
+      chainId,
     };
   }
   openSetDialog = () => {
-    this.setState({nodeConfigVisible: true});
+    this.setState({ nodeConfigVisible: true });
   }
   handleIPChange = (v) => {
     this.state.ip = v;
@@ -56,25 +55,25 @@ export default class Header extends PureComponent {
     this.state.chainId = v;
   }
   onConfigNodeOK = () => {
-    if (this.state.ip == '') {
+    if (this.state.ip === '') {
       Feedback.toast.error('请输入IP地址');
       return;
     }
-    if (this.state.port == '') {
+    if (this.state.port === '') {
       Feedback.toast.error('请输入端口');
       return;
     }
-    var nodeInfo = "http://" + this.state.ip + ":" + this.state.port;
-    cookie.save("nodeInfo", nodeInfo);
-    cookie.save("chainId", this.state.chainId);
+    const nodeInfo = 'http://' + this.state.ip + ':' + this.state.port;
+    cookie.save('nodeInfo', nodeInfo);
+    cookie.save('chainId', this.state.chainId);
     axios.defaults.baseURL = nodeInfo;
-    this.setState({nodeConfigVisible: false, nodeInfo: nodeInfo, chainId: this.state.chainId});
+    this.setState({ nodeConfigVisible: false, nodeInfo, chainId: this.state.chainId });
 
     history.push('/');
   }
   render() {
-    var defaultTrigger = <Button type="primary" className="btrigger"  onClick={this.openSetDialog.bind(this)}><Icon type="set" />设置节点</Button>;
-    const { profile, isMobile, theme, width, className, style } = this.props;
+    const defaultTrigger = <Button type="primary" className="btrigger" onClick={this.openSetDialog.bind(this)}><Icon type="set" />设置节点</Button>;
+    const { isMobile, theme, width, className, style } = this.props;
     return (
       <Layout.Header
         theme={theme}
@@ -86,54 +85,53 @@ export default class Header extends PureComponent {
           className="ice-design-layout-header-menu"
           style={{ display: 'flex' }}
         >
-    
-        <Balloon  trigger={defaultTrigger} closable={false}>
-            当前连接的节点:{this.state.nodeInfo}<br/><br/>ChainId:{this.state.chainId}
-        </Balloon>
-        <Dialog
-          visible={this.state.nodeConfigVisible}
-          title="配置节点"
-          footerActions='ok'
-          footerAlign='center'
-          closeable='true'
-          onOk={this.onConfigNodeOK.bind(this)}
-          onCancel={() => this.setState({nodeConfigVisible: false})}
-          onClose={() => this.setState({nodeConfigVisible: false})}
-        >
-          <Input hasClear
-            onChange={this.handleIPChange.bind(this)} 
-            style={{ width: 400 }}
-            addonBefore="IP"
-            size="medium"
-            defaultValue={this.state.ip}
-            maxLength={15}
-            hasLimitHint
-          />
-          <br/>
-          <br/>
-          <Input hasClear
-            onChange={this.handlePortChange.bind(this)} 
-            style={{ width: 400 }}
-            addonBefore="RPC端口"
-            size="medium"
-            defaultValue={this.state.port}
-            maxLength={5}
-            hasLimitHint
-            onPressEnter={this.onConfigNodeOK.bind(this)}
-          />
-          <br/>
-          <br/>
-          <Input hasClear
-            onChange={this.handleChainIdChange.bind(this)} 
-            style={{ width: 400 }}
-            addonBefore="ChainID"
-            size="medium"
-            defaultValue={this.state.chainId}
-            maxLength={5}
-            hasLimitHint
-            onPressEnter={this.onConfigNodeOK.bind(this)}
-          />
-        </Dialog> 
+          <Balloon trigger={defaultTrigger} closable={false}>
+            当前连接的节点:{this.state.nodeInfo}<br /><br />ChainId:{this.state.chainId}
+          </Balloon>
+          <Dialog
+            visible={this.state.nodeConfigVisible}
+            title="配置节点"
+            footerActions="ok"
+            footerAlign="center"
+            closeable="true"
+            onOk={this.onConfigNodeOK.bind(this)}
+            onCancel={() => this.setState({ nodeConfigVisible: false })}
+            onClose={() => this.setState({ nodeConfigVisible: false })}
+          >
+            <Input hasClear
+              onChange={this.handleIPChange.bind(this)}
+              style={{ width: 400 }}
+              addonBefore="IP"
+              size="medium"
+              defaultValue={this.state.ip}
+              maxLength={15}
+              hasLimitHint
+            />
+            <br />
+            <br />
+            <Input hasClear
+              onChange={this.handlePortChange.bind(this)}
+              style={{ width: 400 }}
+              addonBefore="RPC端口"
+              size="medium"
+              defaultValue={this.state.port}
+              maxLength={5}
+              hasLimitHint
+              onPressEnter={this.onConfigNodeOK.bind(this)}
+            />
+            <br />
+            <br />
+            <Input hasClear
+              onChange={this.handleChainIdChange.bind(this)}
+              style={{ width: 400 }}
+              addonBefore="ChainID"
+              size="medium"
+              defaultValue={this.state.chainId}
+              maxLength={5}
+              hasLimitHint
+              onPressEnter={this.onConfigNodeOK.bind(this)}
+            />
+          </Dialog>
 
           {/* <Search
             style={{ fontSize: '12px' }}

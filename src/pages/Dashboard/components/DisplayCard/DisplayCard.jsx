@@ -1,16 +1,18 @@
+/* eslint-disable no-await-in-loop */
+/* eslint-disable no-continue */
 /* eslint react/jsx-no-target-blank: 0 */
 import React, { Component } from 'react';
 import IceContainer from '@icedesign/container';
-import { Balloon, Grid } from '@icedesign/base';
+import { Balloon, Grid, Feedback } from '@icedesign/base';
+import { connect } from 'react-redux';
+import { compose } from 'redux';
 import './DisplayCard.scss';
 import injectReducer from '../../../../utils/injectReducer';
 import { getLatestBlock, getTransactionsNum } from './actions';
 import reducer from './reducer';
-import { connect } from 'react-redux';
-import { compose } from 'redux';
-import {  getCurrentBlock, getTotalTxNumByBlockNum,
-          getProducers, getDposIrreversibleInfo, getLatestEpchoInfo} from '../../../../api';
+import { getCurrentBlock, getTotalTxNumByBlockNum, getProducers, getDposIrreversibleInfo, getLatestEpchoInfo } from '../../../../api';
 import eventProxy from '../../../../utils/eventProxy';
+
 const { Row, Col } = Grid;
 
 class BlockTxLayout extends Component {
@@ -24,16 +26,12 @@ class BlockTxLayout extends Component {
     super(props);
     this.state = {
       curBlockInfo: {},
-      dposInfo: {},
       latestEpchoInfo: {},
       irreversible: {},
-      blockDataSource: [],
-      txDataSource: [],
       curProducerList: [],
       activeProducers: [],
       totalTxNumInOneHour: 0,
       maxTPS: 0,
-      txNums: [],
       txInfos: [],
     };
   }
@@ -43,105 +41,91 @@ class BlockTxLayout extends Component {
   }
 
   updateBlockChainInfo = async () => {
-    var resp = await getCurrentBlock([false]);
-    var curBlockInfo = resp.data.result; 
-    var curHeight = curBlockInfo.number;
+    try {
+      let resp = await getCurrentBlock([false]);
+      const curBlockInfo = resp.data.result;
+      const curHeight = curBlockInfo.number;
 
-    eventProxy.trigger('curHeight', curHeight);
+      eventProxy.trigger('curHeight', curHeight);
 
-    resp = await getDposIrreversibleInfo();
-    var irreversibleInfo = resp.data.result;
+      resp = await getDposIrreversibleInfo();
+      const irreversibleInfo = resp.data.result;
 
-    resp = await getLatestEpchoInfo();
-    var latestEpchoInfo = resp.data.result;
-    
-    resp = await getProducers();
-    var producers = resp.data.result;
+      resp = await getLatestEpchoInfo();
+      const latestEpchoInfo = resp.data.result;
 
-    var blockInterval = 3;
-    var intervalTime = 5 * 60; // 5 minutes, 100 blocks
-    var interval = intervalTime / 3;
-    var oneHour = 3600;
-    var maxSpan = oneHour / blockInterval;
-    //var txNums = this.caculateTxNums(curHeight, intervalTime / blockInterval, oneHour / blockInterval);
+      resp = await getProducers();
+      const producers = resp.data.result;
 
-    if (this.state.txInfos.length > 12) {
-      this.state.txInfos = this.state.txInfos.slice(this.state.txInfos.length - 12);
-    }
+      const blockInterval = 3;
+      const intervalTime = 5 * 60; // 5 minutes, 100 blocks
+      const interval = intervalTime / 3;
+      const oneHour = 3600;
+      const maxSpan = oneHour / blockInterval;
 
-    var lastMaxHeight = 0;
-    if (this.state.txInfos.length > 0) {
-      lastMaxHeight = this.state.txInfos[this.state.txInfos.length - 1].blockHeight;
-    }
-    var totalNum = this.state.totalTxNumInOneHour;
-    var maxTxNum = this.state.maxTPS * intervalTime;
-    if (curHeight - lastMaxHeight >= interval) {
-      totalNum = 0;
-      maxTxNum = 0;
-      for (var fromHeigth = curHeight - maxSpan + interval; fromHeigth <= curHeight;) {
-        if (fromHeigth <= lastMaxHeight + interval) {
-          fromHeigth = fromHeigth + interval;
-          continue;
-        }
-        var resp = await getTotalTxNumByBlockNum([fromHeigth, interval]);
-        var txNum = resp.data.result;
-        this.state.txInfos.push({blockHeight:fromHeigth, txNum:txNum});
-        //console.log("new txInfos = " + fromHeigth + '->' + txNum);
-        totalNum += txNum;
-        if (txNum > maxTxNum) {
-          maxTxNum = txNum;
-        }
-        fromHeigth = fromHeigth + interval;
+      if (this.state.txInfos.length > 12) {
+        this.state.txInfos = this.state.txInfos.slice(this.state.txInfos.length - 12);
       }
-      eventProxy.trigger('txInfos', this.state.txInfos);
-    }
-    this.setState({
-      curBlockInfo: curBlockInfo,
-      irreversible: irreversibleInfo,
-      totalTxNumInOneHour: totalNum,
-      maxTPS: Math.round(maxTxNum / intervalTime),
-      latestEpchoInfo: latestEpchoInfo,
-      curProducerList: producers,
-      activeProducers: latestEpchoInfo.activatedProducerSchedule,
-    });
 
-    setTimeout(() => {this.updateBlockChainInfo()}, 3000);
+      let lastMaxHeight = 0;
+      if (this.state.txInfos.length > 0) {
+        lastMaxHeight = this.state.txInfos[this.state.txInfos.length - 1].blockHeight;
+      }
+      let totalNum = this.state.totalTxNumInOneHour;
+      let maxTxNum = this.state.maxTPS * intervalTime;
+      if (curHeight - lastMaxHeight >= interval) {
+        totalNum = 0;
+        maxTxNum = 0;
+        for (let fromHeigth = curHeight - maxSpan + interval; fromHeigth <= curHeight;) {
+          if (fromHeigth <= lastMaxHeight + interval) {
+            fromHeigth += interval;
+            continue;
+          }
+          resp = await getTotalTxNumByBlockNum([fromHeigth, interval]);
+          const txNumber = resp.data.result;
+          this.state.txInfos.push({ blockHeight: fromHeigth, txNum: txNumber });
+          totalNum += txNumber;
+          if (txNumber > maxTxNum) {
+            maxTxNum = txNumber;
+          }
+          fromHeigth += interval;
+        }
+        eventProxy.trigger('txInfos', this.state.txInfos);
+      }
+      this.setState({
+        curBlockInfo,
+        irreversible: irreversibleInfo,
+        totalTxNumInOneHour: totalNum,
+        maxTPS: Math.round(maxTxNum / intervalTime),
+        latestEpchoInfo,
+        curProducerList: producers,
+        activeProducers: latestEpchoInfo.activatedProducerSchedule,
+      });
+
+      setTimeout(() => { this.updateBlockChainInfo(); }, 3000);
+    } catch (error) {
+      Feedback.toast.error('发生错误，请检查同节点的连接情况');
+    }
   }
 
   caculateTxNums = async (curHeight, interval, maxSpan) => {
-    var txNums = [];
-    var totalNum = 0;
-    var maxTxNum = 0;
-    for (var from = curHeight; from > curHeight - maxSpan + interval;) {
-      var resp = await getTotalTxNumByBlockNum([from, interval]);
-      var txNum = resp.data.result;
+    const txNums = [];
+    let totalNum = 0;
+    let maxTxNum = 0;
+    for (let from = curHeight; from > curHeight - maxSpan + interval;) {
+      const resp = await getTotalTxNumByBlockNum([from, interval]);
+      const txNum = resp.data.result;
       txNums.push(txNum);
       totalNum += txNum;
       if (txNum > maxTxNum) {
         maxTxNum = txNum;
       }
-      from = from - interval;
+      from -= interval;
     }
-    //var txNumsInfo = [maxTxNum, ...txNums];
-    return {txNums, totalNum, maxTxNum};
+    return { txNums, totalNum, maxTxNum };
   }
 
   render() {
-    const down = (
-      <img
-        src={require('./images/TB1ReMsh3vD8KJjy0FlXXagBFXa-12-18.png')}
-        style={styles.down}
-        alt=""
-      />
-    );
-    const up = (
-      <img
-        src={require('./images/TB1Q1Msh3vD8KJjy0FlXXagBFXa-12-18.png')}
-        style={styles.up}
-        alt=""
-      />
-    );
-
     return (
       <IceContainer className="display-card-container" style={styles.container}>
         <Row wrap>
@@ -212,7 +196,7 @@ class BlockTxLayout extends Component {
               </span>
             </div>
             <div style={styles.smallCount} className="count">
-              {this.state.totalTxNumInOneHour} Txns 
+              {this.state.totalTxNumInOneHour} Txns
               <span style={styles.extraIcon}>
                 <Balloon
                   trigger={
@@ -253,10 +237,9 @@ class BlockTxLayout extends Component {
                   注册为生产者的节点数量
                 </Balloon>
               </span>
-              <s></s>
             </div>
             <div style={styles.smallCount} className="count">
-              {this.state.activeProducers.length} 
+              {this.state.activeProducers.length}
               <span style={styles.extraIcon}>
                 <Balloon
                   trigger={
@@ -280,8 +263,8 @@ class BlockTxLayout extends Component {
               投票数
             </div>
             <div style={styles.count} className="count">
-             {this.state.latestEpchoInfo.totalQuantity} FT
-             <span style={styles.extraIcon}>
+              {this.state.latestEpchoInfo.totalQuantity} FT
+              <span style={styles.extraIcon}>
                 <Balloon
                   trigger={
                     <img
@@ -370,7 +353,7 @@ const styles = {
 
 const mapDispatchToProps = {
   getLatestBlock,
-  getTransactionsNum
+  getTransactionsNum,
 };
 
 // 参数state就是redux提供的全局store，而loginResult会成为本组件的this.props的其中一个成员

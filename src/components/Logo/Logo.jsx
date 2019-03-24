@@ -1,6 +1,6 @@
 import React, { PureComponent } from 'react';
 import { Link } from 'react-router-dom';
-import { Tag, Input } from '@alifd/next';
+import { Tag } from '@alifd/next';
 
 export default class Logo extends PureComponent {
   render() {

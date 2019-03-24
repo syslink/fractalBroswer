@@ -14,7 +14,7 @@ export default class CustomCombobox extends Component {
 
     this.state = {
       value: props.value,
-      dataSource: props.dataSource
+      dataSource: props.dataSource,
     };
     this.onChange = this.onChange.bind(this);
     this.onInputUpdate = this.onInputUpdate.bind(this);
@@ -30,16 +30,16 @@ export default class CustomCombobox extends Component {
 
   onInputUpdate = value => {
     // mock dataSource
-    this.state.dataSource.push({label: value,value: value,})
+    this.state.dataSource.push({ label: value, value });
     this.setState(this.state);
   };
 
   onInputBlur = (e, value) => {
-    var newEle = {label: value,value: value};
-    var exist = this.state.dataSource.some(element=>{
+    const newEle = { label: value, value };
+    const exist = this.state.dataSource.some(element => {
       return newEle.label === element.label;
-    })
-    if(!exist) {
+    });
+    if (!exist) {
       this.state.dataSource.push(newEle);
       this.setState(this.state);
       if (this.props.onChange) {
@@ -57,8 +57,8 @@ export default class CustomCombobox extends Component {
   render() {
     return (
       <Combobox
-        hasClear={true}
-        style={{verticalAlign: 'middle'}}
+        hasClear
+        style={{ verticalAlign: 'middle' }}
         onChange={this.onChange}
         value={this.state.value}
         dataSource={this.state.dataSource}

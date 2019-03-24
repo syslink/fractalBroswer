@@ -36,6 +36,7 @@ import SearchAsset from './pages/SearchAsset';
 import OperateAsset from './pages/OperateAsset';
 import Transaction from './pages/Transaction';
 import ProducerList from './pages/ProducerList';
+import RawTxConstructor from './pages/RawTxConstructor';
 
 const routerConfig = [
   {
@@ -162,6 +163,11 @@ const routerConfig = [
     path: '/contractManager',
     layout: BasicLayout,
     component: ContractManager,
+  },
+  {
+    path: '/rawTxConstructor',
+    layout: BasicLayout,
+    component: RawTxConstructor,
   },
   {
     path: '/producerList',

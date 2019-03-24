@@ -44,7 +44,7 @@ const asideMenuConfig = [
   {
     name: '账户管理',
     path: '/table',
-    icon: 'table',
+    icon: 'coupons',
     // authority: 'admin',
     children: [
       {
@@ -62,7 +62,7 @@ const asideMenuConfig = [
   {
     name: '区块 & 交易',
     path: '/list',
-    icon: 'ul-list',
+    icon: 'search',
     children: [
       {
         name: '区块',
@@ -77,7 +77,7 @@ const asideMenuConfig = [
   {
     name: '资产管理',
     path: '/portlets',
-    icon: 'publish',
+    icon: 'ul-list',
     children: [
       {
         name: '资产搜索',
@@ -92,7 +92,7 @@ const asideMenuConfig = [
   {
     name: '生产者',
     path: '/portlets',
-    icon: 'publish',
+    icon: 'repair',
     children: [
       {
         name: '生产者列表',
@@ -101,13 +101,17 @@ const asideMenuConfig = [
     ],
   },
   {
-    name: '合约管理',
+    name: '开发者',
     path: '/portlets',
-    icon: 'publish',
+    icon: 'code',
     children: [
       {
         name: '合约开发',
         path: '/contractManager',
+      },
+      {
+        name: '交易构造',
+        path: '/rawTxConstructor',
       },
     ],
   },
