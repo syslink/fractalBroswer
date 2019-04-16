@@ -117,7 +117,7 @@ export default class ProducerList extends Component {
       this.state.myVoterAccounts = myVoterAccounts;
     }
 
-    let resp = await rpc.getProducers();
+    let resp = await rpc.getCadidates();
     const producers = [];
     if (Object.prototype.hasOwnProperty.call(resp.data, 'result') && resp.data.result != null) {
       for (const producer of resp.data.result) {

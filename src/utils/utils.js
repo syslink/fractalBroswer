@@ -173,4 +173,39 @@ function saveTxBothFromAndTo(fromAccount, toAccount, actionType, txHash) {
   }
 }
 
-export { getFlatMenuData, getRouterData, formatterMenuData, hex2Bytes, bytes2Hex, str2Bytes, saveTxHash, saveTxBothFromAndTo, bytes2Number };
+function deepClone(obj) {
+  return JSON.parse(JSON.stringify(obj))
+}
+
+function checkPassword(password) {//必须为字母加数字且长度不小于8位
+  var str = password;
+   if (str == null || str.length <8) {
+       return false;
+   }
+   var reg1 = new RegExp(/^[0-9A-Za-z]+$/);
+   if (!reg1.test(str)) {
+       return false;
+   }
+   var reg = new RegExp(/[A-Za-z].*[0-9]|[0-9].*[A-Za-z]/);
+   if (reg.test(str)) {
+       return true;
+   } else {
+       return false;
+   }
+}
+
+function parsePrivateKey(privateKey) {
+  if (!ethUtil.isValidPrivate(Buffer.from(hex2Bytes(privateKey)))) {
+    Feedback.toast.error('无效私钥！');
+    return;
+  }
+  const publicKey = EthCrypto.publicKeyByPrivateKey(privateKey);
+  console.log('私钥：' + privateKey);
+  console.log('公钥：' + publicKey);
+  console.log('地址：' + EthCrypto.publicKey.toAddress(publicKey));
+  //const bs58 = require('bs58');
+  //console.log(bs58.decode('EeGCnq9vgtb8qQ1XzLxF7g3w7XxrwrDUTz').toString('hex'));
+  
+}
+export { getFlatMenuData, getRouterData, formatterMenuData, hex2Bytes, bytes2Hex, str2Bytes, 
+         saveTxHash, saveTxBothFromAndTo, bytes2Number, deepClone, parsePrivateKey, checkPassword };

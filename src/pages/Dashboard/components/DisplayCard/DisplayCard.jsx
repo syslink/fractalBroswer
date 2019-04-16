@@ -10,7 +10,7 @@ import './DisplayCard.scss';
 import injectReducer from '../../../../utils/injectReducer';
 import { getLatestBlock, getTransactionsNum } from './actions';
 import reducer from './reducer';
-import { getCurrentBlock, getTotalTxNumByBlockNum, getProducers, getDposIrreversibleInfo, getLatestEpchoInfo } from '../../../../api';
+import { getCurrentBlock, getTotalTxNumByBlockNum, getCadidates, getDposIrreversibleInfo, getLatestEpchoInfo } from '../../../../api';
 import eventProxy from '../../../../utils/eventProxy';
 
 const { Row, Col } = Grid;
@@ -54,7 +54,7 @@ class BlockTxLayout extends Component {
       resp = await getLatestEpchoInfo();
       const latestEpchoInfo = resp.data.result;
 
-      resp = await getProducers();
+      resp = await getCadidates();
       const producers = resp.data.result;
 
       const blockInterval = 3;

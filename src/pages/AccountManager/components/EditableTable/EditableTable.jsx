@@ -30,6 +30,8 @@ import { getAssetInfoById, getSuggestionGasPrice, getTransactionByHash, getTrans
 import reducer from '../../reducer';
 
 
+const AccountFile = 'accountInfo';
+
 class EditableTable extends Component {
   static displayName = 'EditableTable';
 

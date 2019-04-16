@@ -108,13 +108,12 @@ export async function getTotalTxNumByBlockNum(params) {
 }
 
 
-export async function getProducers() {
+export async function getCadidates() {
   const dataToSrv = JSON.stringify({ jsonrpc: '2.0',
-    method: 'dpos_producers',
+    method: 'dpos_cadidates',
     params: [],
     id: 1 });
-  return axios({
-    method: 'post',
+  return utils.postToNode({
     data: dataToSrv,
   });
 }
@@ -231,7 +230,7 @@ function getRSV(signature, chainId) {
   return { r, s, v };
 }
 
-export async function sendRawTransaction(params, privateKey) {
+export async function sendRawTransaction(params, privateKey, indexes) {
   const resp = await getNonce([params.accountName]);
   const nonce = resp.data.result;
   let chainId = 1;
@@ -259,10 +258,13 @@ export async function sendRawTransaction(params, privateKey) {
 
   const signature = await signTx(tx, privateKey);
   const rsv = getRSV(signature, chainId);
-  Object.assign(tx.actions[0], rsv);
+  let signInfo = rsv;
+  signInfo.indexes = indexes;
+  tx.action[0].signInfo = signInfo;
+  //Object.assign(tx.actions[0], rsv);
   const action1 = tx.actions[0];
   let rlpData = encode([tx.gasAssetId, tx.gasPrice, [[action1.actionType, action1.nonce, action1.assetId, action1.accountName, action1.toAccountName,
-    action1.gasLimit, action1.amount, action1.payload, action1.v, action1.r, action1.s]]]);
+    action1.gasLimit, action1.amount, action1.payload, [[action1.signInfo.v, action1.signInfo.r, action1.signInfo.s, action1.signInfo.indexes]]]]]);
   rlpData = '0x' + rlpData.toString('hex');
   const dataToSrv = JSON.stringify({ jsonrpc: '2.0',
     method: 'ft_sendRawTransaction',
@@ -278,7 +280,7 @@ export async function sendTransaction(params) {
     const resp = await getPrivateKeyByAccountName(params.accountName, params.password);
     if (resp != null) {
       const privateKey = resp.data.result;
-      return sendRawTransaction(params, privateKey);
+      return sendRawTransaction(params, privateKey, [0]);
     }
   } catch (error) {
     Feedback.toast.error(error.message);
@@ -382,7 +384,7 @@ export default {
   getTxNumByBlockNum,
   getTotalTxNumByBlockHash,
   getTotalTxNumByBlockNum,
-  getProducers,
+  getCadidates,
   getDposAccountInfo,
   getDposIrreversibleInfo,
   getDposInfo,

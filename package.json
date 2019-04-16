@@ -21,12 +21,16 @@
     "axios": "^0.17.1",
     "bignumber.js": "^8.0.2",
     "bizcharts": "^3.4.4",
+    "bs58": "^4.0.1",
     "classnames": "^2.2.5",
     "copy-to-clipboard": "^3.0.8",
     "enquire-js": "^0.1.2",
     "eth-crypto": "^1.3.2",
     "ethereumjs-util": "^6.1.0",
+    "ethers": "^4.0.27",
     "foundation-symbol": "^0.1.0",
+    "fractal-web3": "^1.0.13",
+    "fractal_solidity_js": "^1.0.0",
     "history": "^4.7.2",
     "hoist-non-react-statics": "^2.5.5",
     "invariant": "^2.2.4",
@@ -51,7 +55,8 @@
     "react-transition-group": "^2.4.0",
     "redux": "3.6.0",
     "redux-thunk": "^2.3.0",
-    "rlp": "^2.2.2"
+    "rlp": "^2.2.2",
+    "solc": "^0.5.6"
   },
   "devDependencies": {
     "babel-eslint": "^8.0.3",
@@ -67,7 +72,7 @@
   },
   "scripts": {
     "start": "ice dev",
-    "build": "ice build",
+    "build": "ice build --max_old_space_size=4096",
     "lint": "eslint . --ext '.js,.jsx' --fix"
   },
   "publishConfig": {

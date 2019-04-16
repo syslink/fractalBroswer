@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import EditableTable from './components/EditableTable';
+import EditableTable from './components/KeyList';
 
 export default class KeystoreManager extends Component {
   static displayName = 'KeystoreManager';
