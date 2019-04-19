@@ -21,3 +21,7 @@ export const UNVOTE_PRODUCER = 774;
 
 export const FT_ASSET_ID = 1;
 export const FT_DECIMALS = 18;
+
+export const AccountFile = 'accountInfo';
+export const KeyStoreFile = 'keystoreInfo';
+export const TxInfoFile = 'txInfo';

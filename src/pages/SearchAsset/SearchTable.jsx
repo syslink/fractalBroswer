@@ -99,7 +99,7 @@ export default class SearchTable extends Component {
           assetInfo = this.convertAssetNumber(assetInfo);
           this.setState({
             assetInfo: [assetInfo] });
-        } if (Object.prototype.hasOwnProperty.call(resp.data, 'result') && resp.data.result == null) {
+        } else if (Object.prototype.hasOwnProperty.call(resp.data, 'result') && resp.data.result == null) {
           Feedback.toast.error('无此资产信息');
         } else if (Object.prototype.hasOwnProperty.call(resp.data, 'error')) {
           Feedback.toast.error(resp.data.error.message);

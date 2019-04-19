@@ -9,6 +9,7 @@ import { Tag, Balloon } from '@alifd/next';
 import { connect } from 'react-redux';
 import { compose } from 'redux';
 import BigNumber from 'bignumber.js';
+import cookie from 'react-cookies';
 
 import { encode } from 'rlp';
 import CellEditor from './CellEditor';
@@ -191,15 +192,15 @@ class EditableTable extends Component {
           查看交易
         </Button>
         &nbsp;&nbsp;
-        <Button type="primary" onClick={this.updatePublicKey.bind(this, index)}>
-          更换公钥
+        <Button type="primary" onClick={this.bindNewKey.bind(this, index)}>
+          绑定新密钥
         </Button>
       </view>
     );
   };
 
 
-  updatePublicKey = (index) => {
+  bindNewKey = (index) => {
     this.state.curAccount = this.props.accountInfos[index];
     this.props.openDialogOfUpdatePK();
   }
@@ -278,6 +279,16 @@ class EditableTable extends Component {
   };
 
   addAccountBySystem = () => {
+    let chainId = 1;
+    const chainIdCookie = cookie.load('chainId');
+    if (chainIdCookie != null && chainIdCookie != '') {
+      chainId = chainIdCookie;
+    }
+    chainId = parseInt(chainId, 10);
+    if (chainId == 1) {
+      Feedback.toast.prompt('无法在Fractal主网使用此功能');
+      return;
+    }
     this.props.openDialogOfCreateAccountBySystem();
   }
 
@@ -590,14 +601,13 @@ class EditableTable extends Component {
             />
             <Table.Column
               width={200}
-              title="绑定的公钥"
-              dataIndex="publicKey"
+              title="绑定的密钥"
+              dataIndex="authors"
             />
             <Table.Column
               width={100}
-              title="是否有效"
-              dataIndex="valid"
-              cell={this.renderValid}
+              title="账号阈值"
+              dataIndex="threshold"
             />
             <Table.Column title="操作" width={350} cell={this.renderOperation} />
           </Table>
@@ -668,7 +678,7 @@ class EditableTable extends Component {
         >
           <Select
             style={{ width: 400 }}
-            placeholder="选择您拥有的账户"
+            placeholder="选择您拥有的账户(此账户用于创建新账户)"
             onChange={this.onChangeCreatorAccount.bind(this)}
             dataSource={this.props.accountNames}
           />

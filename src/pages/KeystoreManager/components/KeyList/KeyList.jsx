@@ -7,13 +7,14 @@ import { Tag } from '@alifd/next';
 import axios from 'axios';
 import { ethers } from 'ethers';
 import EthCrypto from 'eth-crypto';
+import EccCrypto from 'eccrypto';
 import * as ethUtil from 'ethereumjs-util';
 import { dpos, utils } from 'fractal-web3';
 import CellEditor from './CellEditor';
 import { hex2Bytes, checkPassword } from '../../../../utils/utils';
+import { KeyStoreFile } from '../../../../utils/constant';
 import './KeyList.scss';
 
-const KeyStoreFile = 'keystoreInfo';
 const { Group: TagGroup, Selectable: SelectableTag } = Tag;
 const ActionType = { CreateFirstAccountByMnemonic: 0, CreateNewAccount: 1, ExportPrivateKey: 2, ExportKeyStoreInfo: 3, ExportMnemonic: 4,
                      DeleteAccount: 5, ImportKeystore: 6 };
@@ -68,7 +69,30 @@ export default class KeyList extends Component {
       },
     };
   }
+
+  testCrypto = async () => {
+    const publicKey = '04c7ef540c8690e4be5e7a10d75084b7226e189325ac54143456345be48c9a8a0228d36d76a294064c7b6bd0d08207f1023110d47a3b743542ab2a75766d92d7c9';
+    const privateKey = '0xe037c4bdd8066a8152cd6555d51c432fd87c0583acbd3150f067f615b6dea6d8';
+    const msg = 'abcde';
+    const encrypted = await EthCrypto.encryptWithPublicKey(publicKey, msg);
+    console.log(JSON.stringify(encrypted).length + ':' + JSON.stringify(encrypted));
+    const str = EthCrypto.cipher.stringify(encrypted);
+    console.log(str.length + ':' + str);
+    const encryptedStr = EthCrypto.cipher.parse(str);
+    console.log(encryptedStr);
+    const message = await EthCrypto.decryptWithPrivateKey(privateKey, encryptedStr);
+    console.log(message);
+
+    EccCrypto.encrypt(Buffer.from(hex2Bytes(publicKey)), Buffer.from(msg)).then(encrypted => {
+      console.log(encrypted);
+      EccCrypto.decrypt(Buffer.from(hex2Bytes(privateKey)), encrypted).then(function(plaintext) {
+        console.log("Message to part A:", plaintext.toString());
+      });
+    })
+  }
+
   componentDidMount() {
+    //this.testCrypto();
     const keystoreInfo = global.localStorage.getItem(KeyStoreFile);
     if (keystoreInfo !== null) {
       const keystoreInfoObj = JSON.parse(keystoreInfo);
