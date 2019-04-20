@@ -15,7 +15,22 @@ import * as constant from '../../../../utils/constant';
 
 
 const splitToken = ',';
-const TxStatus = { SendError:1, NotExecute:2, ExecuteSuccess:3, ExecuteFail:4, Rollback:5 };
+
+/* 交易状态：
+* 1: 发送失败：无需更新
+* 2：发送成功，但尚未执行：需更新
+* 3：发送成功，执行成功：需检查是否被回滚
+* 4：发送成功，执行失败：需检查是否被回滚
+* 5：内部交易成功：需检查是否被回滚
+* 6：内部交易失败：需检查是否被回滚
+*/
+const TxStatus = { SendError:1, NotExecute:2, ExecuteSuccess:3, ExecuteFail:4, InnerSuccess:5, InnerFail:6 };
+
+/* 区块状态：
+* 1: 可逆：显示离不可逆的距离
+* 2：不可逆
+*/
+const BlockStatus = { Rollbackable:1, UnRollbackable:2};
 
 export default class AccountList extends Component {
   static displayName = 'AccountList';
@@ -57,6 +72,8 @@ export default class AccountList extends Component {
       inputOtherPK: false,
       inputOtherPKStr: '输入其它公钥',
       dposInfo: {},
+      maxRollbackBlockNum: 0,
+      maxRollbackTime: 0,  // ms
       importAccountVisible: false,
       authorListVisible: false,
       selfCreateAccountVisible: false,
@@ -73,6 +90,8 @@ export default class AccountList extends Component {
     this.props.getKeystore([]);
 
     this.state.dposInfo = fractal.dpos.getDposInfo();
+    this.state.maxRollbackBlockNum = this.state.dposInfo.blockFrequency * this.state.dposInfo.cadidateScheduleSize * this.state.dposInfo.delayEcho;
+    this.state.maxRollbackTime = this.state.dposInfo.maxRollbackBlockNum * this.state.dposInfo.blockInterval;
     this.loadAccountsFromLS();
     this.loadKeystoreFromLS();
   }
@@ -160,15 +179,18 @@ export default class AccountList extends Component {
     });
   }
   /** 
-   * 交易的n种状态：
-   * 1: 发送失败
-   * 2：发送成功，但尚未执行
-   * 3：发送成功，执行成功
-   * 4：发送成功，执行失败
-   * 5：区块被回退
-   * 6：内部交易成功
-   * 7：内部交易失败
-   * 
+    * 交易状态：
+    * 1: 发送失败：无需更新
+    * 2：发送成功，但尚未执行：需更新
+    * 3：发送成功，执行成功：需检查是否被回滚
+    * 4：发送成功，执行失败：需检查是否被回滚
+    * 5：内部交易成功：需检查是否被回滚
+    * 6：内部交易失败：需检查是否被回滚
+    *
+    *  区块状态：
+    * 1: 可逆：显示离不可逆的距离
+    * 2：不可逆
+    * 
    * 需要保存在文件中的账户信息及信息同步时间点：
    * （1）如果是首次同步账户交易信息，则从账户创建时的区块开始同步，同步到最新区块后，在文件中记录此账户最近同步的区块高度
    * （2）如果不是首次同步账户交易信息，则从文件中记录的区块高度+1开始同步交易
@@ -248,7 +270,83 @@ export default class AccountList extends Component {
       console.log(error);
     }
   }
+  /** 
+    * {account1:{lastBlockNum:100, txInfos:[{txStatus,date,txHash,blockHash,blockNum,blockStatus,irreversible, actions:[ {actionType,from,to,assetId,amount,payload,status,index,gasUsed,gasAllot: [ account,gas,typeId],error}],{...}]}}
+    * 
+    * 交易状态：
+    * 1: 发送失败：无需更新
+    * 2：发送成功，但尚未执行：需更新
+    * 3：发送成功，执行成功：需检查是否被回滚
+    * 4：发送成功，执行失败：需检查是否被回滚
+    * 5：内部交易成功：需检查是否被回滚
+    * 6：内部交易失败：需检查是否被回滚
+    *
+    *
+    * 区块状态：
+    * 1: 可逆：显示离不可逆的距离
+    * 2：不可逆
+    * 3：被回滚
+    * 
+    * 同步交易的过程：
+    * 1：先遍历所有已存在的交易
+    *   1.1 如果是可逆的，则检查其是否已被回滚
+    *     1.1.1 如果没有被回滚，则确认其是否不可逆，并更新状态irreversible
+    *     1.1.2 如果被回滚，则更新状态blockStatus
+    *   1.2 如果不可逆，则pass
+    * 
+    * 问：如何确认区块尚未被回滚？
+    * 答：通过高度获取区块，然后比较区块的hash，如果一致，则表示当前未被回滚，当然，不能排除后面被回滚的可能性
+    * 
+    * 问：如何确认区块状态不可逆？
+    * 答：首先确认区块未被回滚，这样区块高度才是有效的，然后才能根据区块高度来确认区块不可逆。
+  */
   syncTxFromNode = () => {
+    try {
+      let startSyncBlockNum = 0;
+      const allTxInfoSet = global.localStorage.getItem(constant.TxInfoFile);
+      const curBlock = fractal.ft.getCurrentBlock(false);
+      const curBlockNum = curBlock.number;
+      const step = 1000;
+
+      for (const account of this.state.accountInfos) {
+        const accountName = account.accountName;
+        let accountExistTxs = {};
+        if (allTxInfoSet !== null) {
+          if (allTxInfoSet[accountName] !== null) {   // 在交易文件中存在某个账户的记录
+            startSyncBlockNum = allTxInfoSet[accountName].lastBlockNum + 1;
+            for (const txInfo of allTxInfoSet[accountName].txInfos) {
+              if (txInfo.txStatus != TxStatus.SendError) {
+                accountExistTxs[txInfo.txHash] = txInfo;
+              }
+            }
+          } else {
+            startSyncBlockNum = account.number;
+          }
+        } else {
+          startSyncBlockNum = account.number;
+        }
+        startSyncBlockNum -= 10;
+        if (startSyncBlockNum < 0) {
+          startSyncBlockNum = 0;
+        }
+        let accountTxs = [];
+        for (let blockNum = curBlockNum; blockNum > startSyncBlockNum; blockNum -= step) {
+          let lookBack = step;
+          if (blockNum - startSyncBlockNum < step) {
+            lookBack = blockNum - startSyncBlockNum + 1;
+          }
+          accountTxs.push(fractal.ft.getTxsByAccount(accountName, blockNum, lookBack));
+          accountTxs.push(fractal.ft.getInternalTxsByAccount(accountName, blockNum, lookBack));
+        }
+        
+        for (const txHash of accountTxs) {
+          const txInfo = fractal.ft.getTransactionByHash(txHash);
+          const receipt = fractal.ft.getTransactionReceipt(txHash);
+        }
+      }
+    } catch (error) {
+      
+    }
     
   }
   renderActionType = (value, index, record) => {
