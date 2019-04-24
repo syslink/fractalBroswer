@@ -23,8 +23,8 @@ export default class Dashboard extends Component {
     return (
       <div className="dashboard-page">
         <DisplayCard />
-
-        <TabChart />
+{/* 
+        <TabChart /> */}
 
         <BlocksTable />
 

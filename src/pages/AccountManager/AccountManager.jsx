@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import EditableTable from './components/EditableTable';
+import AccountList from './components/AccountList';
 
 export default class AccountManager extends Component {
   static displayName = 'AccountManager';
@@ -12,7 +12,7 @@ export default class AccountManager extends Component {
   render() {
     return (
       <div className="accountmanager-page">
-        <EditableTable />
+        <AccountList />
       </div>
     );
   }

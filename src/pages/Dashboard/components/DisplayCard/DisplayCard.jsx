@@ -6,6 +6,7 @@ import IceContainer from '@icedesign/container';
 import { Balloon, Grid, Feedback } from '@icedesign/base';
 import { connect } from 'react-redux';
 import { compose } from 'redux';
+import * as fractal from 'fractal-web3';
 import './DisplayCard.scss';
 import injectReducer from '../../../../utils/injectReducer';
 import { getLatestBlock, getTransactionsNum } from './actions';
@@ -33,6 +34,7 @@ class BlockTxLayout extends Component {
       totalTxNumInOneHour: 0,
       maxTPS: 0,
       txInfos: [],
+      dposInfo: {},
     };
   }
 
@@ -42,66 +44,76 @@ class BlockTxLayout extends Component {
 
   updateBlockChainInfo = async () => {
     try {
-      let resp = await getCurrentBlock([false]);
-      const curBlockInfo = resp.data.result;
-      const curHeight = curBlockInfo.number;
+      // const test = getCurrentBlock([false]).then(response => {
+      //   response.json().then(data => {
+      //     console.log(data);
+      //   });
+      // });;
+      // console.log(test);
+      const p1 = fractal.ft.getCurrentBlock(false);
+      const p2 = fractal.dpos.getDposIrreversibleInfo();
+      const p3 = fractal.dpos.getLatestEpchoInfo();
+      const p4 = fractal.dpos.getCadidates();
+      const p5 = fractal.dpos.getDposInfo();
+      const self = this;
+      Promise.all([p1, p2, p3, p4, p5]).then(result => {
+        const [curBlockInfo, irreversibleInfo, latestEpchoInfo, cadidates, dposInfo] = result;
+        const curHeight = curBlockInfo.number;
+        eventProxy.trigger('curHeight', curHeight);
 
-      eventProxy.trigger('curHeight', curHeight);
+        const maxSpan = dposInfo.blockFrequency * dposInfo.cadidateScheduleSize;
+        const interval = 1;
 
-      resp = await getDposIrreversibleInfo();
-      const irreversibleInfo = resp.data.result;
-
-      resp = await getLatestEpchoInfo();
-      const latestEpchoInfo = resp.data.result;
-
-      resp = await getCadidates();
-      const producers = resp.data.result;
-
-      const blockInterval = 3;
-      const intervalTime = 5 * 60; // 5 minutes, 100 blocks
-      const interval = intervalTime / 3;
-      const oneHour = 3600;
-      const maxSpan = oneHour / blockInterval;
-
-      if (this.state.txInfos.length > 12) {
-        this.state.txInfos = this.state.txInfos.slice(this.state.txInfos.length - 12);
-      }
-
-      let lastMaxHeight = 0;
-      if (this.state.txInfos.length > 0) {
-        lastMaxHeight = this.state.txInfos[this.state.txInfos.length - 1].blockHeight;
-      }
-      let totalNum = this.state.totalTxNumInOneHour;
-      let maxTxNum = this.state.maxTPS * intervalTime;
-      if (curHeight - lastMaxHeight >= interval) {
-        totalNum = 0;
-        maxTxNum = 0;
-        for (let fromHeigth = curHeight - maxSpan + interval; fromHeigth <= curHeight;) {
-          if (fromHeigth <= lastMaxHeight + interval) {
-            fromHeigth += interval;
-            continue;
-          }
-          resp = await getTotalTxNumByBlockNum([fromHeigth, interval]);
-          const txNumber = resp.data.result;
-          this.state.txInfos.push({ blockHeight: fromHeigth, txNum: txNumber });
-          totalNum += txNumber;
-          if (txNumber > maxTxNum) {
-            maxTxNum = txNumber;
-          }
-          fromHeigth += interval;
+        if (self.state.txInfos.length > 12) {
+          self.state.txInfos = self.state.txInfos.slice(self.state.txInfos.length - 12);
         }
-        eventProxy.trigger('txInfos', this.state.txInfos);
-      }
-      this.setState({
-        curBlockInfo,
-        irreversible: irreversibleInfo,
-        totalTxNumInOneHour: totalNum,
-        maxTPS: Math.round(maxTxNum / intervalTime),
-        latestEpchoInfo,
-        curProducerList: producers,
-        activeProducers: latestEpchoInfo.activatedProducerSchedule,
-      });
 
+        let lastMaxHeight = 0;
+        if (self.state.txInfos.length > 0) {
+          lastMaxHeight = self.state.txInfos[self.state.txInfos.length - 1].blockHeight;
+        }
+        let totalNum = self.state.totalTxNumInOneHour;
+        let maxTxNum = self.state.maxTPS * dposInfo.blockInterval / 1000;
+        if (curHeight - lastMaxHeight >= interval) {
+          totalNum = 0;
+          maxTxNum = 0;
+          let promiseArr = [];
+          let blockHeights = [];
+          for (let fromHeight = curHeight - maxSpan; fromHeight <= curHeight; fromHeight++) {
+            promiseArr.push(fractal.ft.getBlockByNum(fromHeight, false));
+            blockHeights.push(fromHeight);
+          }
+          Promise.all(promiseArr).then(blocks => {
+            for (let i = 0; i < blocks.length; i++) {
+              const block = blocks[i];
+              const txNumber = block.transactions.length;
+              self.state.txInfos.push({ blockHeight: blockHeights[i], txNum: txNumber });
+              totalNum += txNumber;
+              if (txNumber > maxTxNum) {
+                maxTxNum = txNumber;
+              }
+            }
+            eventProxy.trigger('txInfos', self.state.txInfos);
+
+            self.setState({
+              curBlockInfo,
+              irreversible: irreversibleInfo,
+              totalTxNumInOneHour: totalNum,
+              maxTPS: Math.round(maxTxNum * 1000 / dposInfo.blockInterval),
+              latestEpchoInfo,
+              curProducerList: cadidates,
+              activeProducers: latestEpchoInfo.activatedCadidateSchedule,
+            });
+            
+          }).catch(error => {
+            console.log(error);
+            Feedback.toast.error(error);
+          });
+        }
+      }).catch(error => {
+        console.log(error);
+        Feedback.toast.error(error);
+      })
       setTimeout(() => { this.updateBlockChainInfo(); }, 3000);
     } catch (error) {
       Feedback.toast.error('发生错误，请检查同节点的连接情况');
@@ -191,7 +203,7 @@ class BlockTxLayout extends Component {
                   triggerType="hover"
                   closable={false}
                 >
-                  一小时内最高TPS
+                  两轮出块周期内最高TPS
                 </Balloon>
               </span>
             </div>
@@ -210,7 +222,7 @@ class BlockTxLayout extends Component {
                   triggerType="hover"
                   closable={false}
                 >
-                 最近一小时交易数
+                 最近两轮的交易数
                 </Balloon>
               </span>
             </div>

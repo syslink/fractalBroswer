@@ -94,7 +94,7 @@ export default class KeyList extends Component {
   componentDidMount() {
     this.testCrypto();
     const keystoreInfo = global.localStorage.getItem(KeyStoreFile);
-    if (keystoreInfo !== null) {
+    if (keystoreInfo != null) {
       const keystoreInfoObj = JSON.parse(keystoreInfo);
       for (const ksInfoObj of keystoreInfoObj.keyList) {
         const bip32path = Object.prototype.hasOwnProperty.call(ksInfoObj, 'x-ethers') ? ksInfoObj['x-ethers'].path : NonMnemonicGenerate;
@@ -108,6 +108,14 @@ export default class KeyList extends Component {
   renderOrder = (value, index) => {
     return <span>{index}</span>;
   };
+
+  renderPublicKey = (value) => {
+    return '0x' + value;
+  }
+
+  renderAddress = (value) => {
+    return '0x' + value;
+  }
 
   deleteItem = (index) => {
     this.state.method = ActionType.DeleteAccount;
@@ -221,7 +229,7 @@ export default class KeyList extends Component {
   }
   addNewItem = () => {
     const keystoreInfo = global.localStorage.getItem(KeyStoreFile);
-    if (keystoreInfo === null) {
+    if (keystoreInfo == null) {
       let entropy = ethers.utils.randomBytes(16);
       let mnemonicTemp = ethers.utils.HDNode.entropyToMnemonic(entropy);
       while (this.checkHasDupWord(mnemonicTemp)) {
@@ -242,12 +250,12 @@ export default class KeyList extends Component {
 
   hasKeyStoreFile = () => {
     const keystoreInfo = global.localStorage.getItem(KeyStoreFile);
-    return keystoreInfo !== null;
+    return keystoreInfo != null;
   }
 
   getKeyStoreFile = () => {
     const keystoreInfo = global.localStorage.getItem(KeyStoreFile);
-    return keystoreInfo !== null ? JSON.parse(keystoreInfo) : null;
+    return keystoreInfo != null ? JSON.parse(keystoreInfo) : null;
   }
 
   importPrikey = () => {
@@ -292,7 +300,7 @@ export default class KeyList extends Component {
   getMnemonicIndex = () => {
     const keystoreInfoStr = global.localStorage.getItem(KeyStoreFile);
     const keystoreInfo = JSON.parse(keystoreInfoStr);
-    if (keystoreInfo === null) {
+    if (keystoreInfo == null) {
       return 0;
     } else {
       return keystoreInfo.nextIndex;
@@ -319,7 +327,7 @@ export default class KeyList extends Component {
   }
   addAccountToKeystoreFile = (keyInfo, repalceOldOne) => {
     const keystoreInfoStr = global.localStorage.getItem(KeyStoreFile);
-    if (keystoreInfoStr === null) {
+    if (keystoreInfoStr == null) {
       this.initKeyStoreFile(keyInfo);
     } else {
       const keystoreInfo = JSON.parse(keystoreInfoStr);
@@ -658,7 +666,7 @@ export default class KeyList extends Component {
   }
 
   onReMnemonicOK = () => {
-    if (true || this.state.reMnemonicWords.trim() === this.state.mnemonicWords.trim()) {
+    if (this.state.reMnemonicWords.trim() === this.state.mnemonicWords.trim()) {
       this.state.method = ActionType.CreateFirstAccountByMnemonic;
       this.setState({
         pwdDialogVisible: true,
@@ -705,11 +713,13 @@ export default class KeyList extends Component {
               width={120}
               title="公钥"
               dataIndex="publicKey"
+              cell={this.renderPublicKey}
             />
             <Table.Column
               width={120}
               title="地址"
               dataIndex="address"
+              cell={this.renderAddress}
             />
             <Table.Column
               width={120}
@@ -757,7 +767,7 @@ export default class KeyList extends Component {
         </Dialog>
         <Dialog
           visible={this.state.msgVisible}
-          title={this.state.msgTitle !== null ? this.state.msgTitle : '通知'}
+          title={this.state.msgTitle != null ? this.state.msgTitle : '通知'}
           footerActions="ok"
           footerAlign="center"
           closeable="true"

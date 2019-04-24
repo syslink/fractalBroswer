@@ -2,6 +2,7 @@
 import pathToRegexp from 'path-to-regexp';
 
 import BigNumber from 'bignumber.js';
+import EthCrypto from 'eth-crypto';
 /**
  * 格式化菜单数据结构，如果子菜单有权限配置，则子菜单权限优先于父级菜单的配置
  * 如果子菜单没有配置，则继承自父级菜单的配置

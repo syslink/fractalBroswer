@@ -8,13 +8,23 @@ import { encode } from 'rlp';
 import { Feedback } from '@icedesign/base';
 import * as utils from '../utils/utils';
 
+let provider = 'http://127.0.0.1:8545';
+
+async function postToNode(dataToNode) {
+  return fetch(provider, {headers: { "Content-Type": "application/json" }, method: 'POST', body: dataToNode});
+  // const data = await response.json();
+  // if (data.data.error != null) {
+  //   throw data.data.error.message;
+  // }
+  // return data.data.result;
+}
+
 export async function getCurrentBlock(params) {
   const dataToSrv = JSON.stringify({ jsonrpc: '2.0',
     method: 'ft_getCurrentBlock',
     params,
     id: 1 });
-  return axios({
-    method: 'post',
+  return postToNode({
     data: dataToSrv,
   });
 }
