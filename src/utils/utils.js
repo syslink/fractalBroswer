@@ -205,8 +205,10 @@ function parsePrivateKey(privateKey) {
   console.log('公钥：' + publicKey);
   console.log('地址：' + EthCrypto.publicKey.toAddress(publicKey));
   //const bs58 = require('bs58');
-  //console.log(bs58.decode('EeGCnq9vgtb8qQ1XzLxF7g3w7XxrwrDUTz').toString('hex'));
-  
+  //console.log(bs58.decode('EeGCnq9vgtb8qQ1XzLxF7g3w7XxrwrDUTz').toString('hex')); 
+}
+function isEmptyObj(obj) {
+  return obj == null || obj == '';
 }
 export { getFlatMenuData, getRouterData, formatterMenuData, hex2Bytes, bytes2Hex, str2Bytes, 
-         saveTxHash, saveTxBothFromAndTo, bytes2Number, deepClone, parsePrivateKey, checkPassword };
+         saveTxHash, saveTxBothFromAndTo, bytes2Number, deepClone, parsePrivateKey, checkPassword, isEmptyObj };

@@ -13,7 +13,7 @@ import { encode } from 'rlp';
 import './AccountList.scss';
 
 import * as txParser from '../../../../utils/transactionParser';
-import { hex2Bytes } from '../../../../utils/utils';
+import { hex2Bytes, isEmptyObj } from '../../../../utils/utils';
 import * as constant from '../../../../utils/constant';
 
 
@@ -35,6 +35,8 @@ const TxStatus = { SendError:1, NotExecute:2, ExecuteSuccess:3, ExecuteFail:4, I
     * 3：被回滚  -1
 */
 const BlockStatus = { Rollbacked: -1, Irreversible: 0, Reversible: 1 };
+
+const UpdateAuthorType = { Add: 0, Update: 1, Delete: 2};
 
 export default class AccountList extends Component {
   static displayName = 'AccountList';
@@ -73,11 +75,13 @@ export default class AccountList extends Component {
       suggestionPrice: 10,
       gasPrice: 0,
       gasLimit: 0,
+      payload: '',
       txVisible: false,
       txInfos: [],
       inputOtherPK: false,
       inputOtherPKStr: '输入其它公钥',
       dposInfo: {},
+      chainConfig: {},
       irreversibleInfo: {},
       maxRollbackBlockNum: 0,
       maxRollbackTime: 0,  // ms
@@ -86,6 +90,8 @@ export default class AccountList extends Component {
       selfCreateAccountVisible: false,
       bindNewAuthorVisible: false,
       updateWeightVisible: false,
+      transferVisible: false,
+      txConfirmVisible: false,
       accountInfos: [],
       authorList: [],
       accountNames: [],
@@ -93,11 +99,13 @@ export default class AccountList extends Component {
       blockRollbackCache: {},
       curBlock: null,
       syncTxInterval: 60000,
+      syncTxTimeoutId: 0,
     };
   }
 
   componentDidMount = async () => {
     this.state.dposInfo = await fractal.dpos.getDposInfo();
+    this.state.chainConfig = await fractal.ft.getChainConfig();
     this.state.maxRollbackBlockNum = this.state.dposInfo.blockFrequency * this.state.dposInfo.cadidateScheduleSize * this.state.dposInfo.delayEcho;
     this.state.maxRollbackTime = this.state.maxRollbackBlockNum * this.state.dposInfo.blockInterval;
     this.state.irreversibleInfo = await fractal.dpos.getDposIrreversibleInfo();
@@ -240,7 +248,7 @@ export default class AccountList extends Component {
    * 总gas费
    * gas分配详情
    * 
-   * {account1:{lastBlockHash, lastBlockNum, txInfos:[{isInnerTx,txStatus,date,txHash,blockHash,blockNum,blockStatus, actions:[ {type,from,to,assetID,value,payload,status,actionIndex,gasUsed,gasAllot: [ account,gas,typeId],error}],{...}]}}
+   * {account1:{lastBlockHash, lastBlockNum, txInfos:[{isInnerTx,txStatus,date,txHash,blockHash,blockNumber,blockStatus, actions:[ {type,from,to,assetID,value,payload,status,actionIndex,gasUsed,gasAllot: [ account,gas,typeId],error}],{...}]}}
    * 
    * 交易保存到三个文件中：
    * 1. txSentFail: 发送时就返回失败的交易
@@ -249,6 +257,7 @@ export default class AccountList extends Component {
   */
   showTxs = async (index) => {
     try {
+      this.state.curBlock = await fractal.ft.getCurrentBlock(false);
       this.state.curAccount = this.state.accountInfos[index];
       for (const balance of this.state.accountInfos[index].balances) {
         if (this.state.assetInfos[balance.assetID] == null) {
@@ -309,7 +318,7 @@ export default class AccountList extends Component {
     *   1.2 如果不可逆，则pass
    *  */
   updateTxStatus = async (txInfo, lastIrreveribleBlockNum, callback) => {
-    if (Object.prototype.hasOwnProperty.call(txInfo, 'blockHash')) {   // 通过blockHash判断交易receipt是否已经获取过，条件成立则同步区块状态，否则获取交易的receipt
+    if (txInfo.txStatus != TxStatus.SendError && txInfo.txStatus != TxStatus.NotExecute && Object.prototype.hasOwnProperty.call(txInfo, 'blockHash')) {   // 通过blockHash判断交易receipt是否已经获取过，条件成立则同步区块状态，否则获取交易的receipt
       if (txInfo.blockStatus == null || txInfo.blockStatus === BlockStatus.Reversible) {
         if (this.state.blockRollbackCache[txInfo.blockHash] == null) {
           const blockInfo = await fractal.ft.getBlockByNum(txInfo.blockNumber);
@@ -320,13 +329,13 @@ export default class AccountList extends Component {
         } else {
           txInfo.blockStatus = txInfo.blockNumber <= lastIrreveribleBlockNum ? BlockStatus.Irreversible : BlockStatus.Reversible; 
         }
-        callback(txInfo);
       }
+      callback(txInfo);
     } else {
       const receipt = await fractal.ft.getTransactionReceipt(txInfo.txHash);
       if (receipt != null) {   // 被回滚的区块所包含的交易是没有receipt的
-        txInfo.actions[0].blockHash = receipt.actionResults[0].blockHash;
-        txInfo.actions[0].blockNum = receipt.actionResults[0].blockNum;
+        txInfo.blockHash = receipt.blockHash;
+        txInfo.blockNum = receipt.blockNumber;
         txInfo.actions[0].status = receipt.actionResults[0].status;
         txInfo.txStatus = receipt.actionResults[0].status == 1 ? TxStatus.ExecuteSuccess : TxStatus.ExecuteFail;
         txInfo.actions[0].gasUsed = receipt.actionResults[0].gasUsed;
@@ -337,7 +346,7 @@ export default class AccountList extends Component {
     }
   }
   /** 
-    * {account1:{lastBlockHash, lastBlockNum, txInfos:[{isInnerTx,txStatus,date,txHash,blockHash,blockNum,blockStatus, actions:[ {type,from,to,assetID,value,payload,status,actionIndex,gasUsed,gasAllot: [ account,gas,typeId],error}],{...}]}}
+    * {account1:{lastBlockHash, lastBlockNum, txInfos:[{isInnerTx,txStatus,date,txHash,blockHash,blockNumber,blockStatus, actions:[ {type,from,to,assetID,value,payload,status,actionIndex,gasUsed,gasAllot: [ account,gas,typeId],error}],{...}]}}
     * 
     * 交易状态：
     * 1: 发送失败：无需更新
@@ -372,7 +381,7 @@ export default class AccountList extends Component {
       } else {
         allTxInfoSet = JSON.parse(allTxInfoSet);
       }
-
+      //console.log('allTxInfoSet:' + JSON.stringify(allTxInfoSet));
       const self = this;
       fractal.ft.getCurrentBlock(false).then(async (curBlock) => {
         self.state.curBlock = curBlock;
@@ -384,16 +393,23 @@ export default class AccountList extends Component {
           const accountName = account.accountName;
           let accountExistTxs = {};
           if (allTxInfoSet[accountName] != null) {                             // 在交易文件中存在某个账户的记录
-            //lastSyncBlockNum = allTxInfoSet[accountName].lastBlockNum;
-            //lastSyncBlockHash = allTxInfoSet[accountName].lastBlockHash;
-            startSyncBlockNum = allTxInfoSet[accountName].lastBlockNum + 1;     // 前一次同步到的最后一个区块高度
+            const lastSyncBlockNum = allTxInfoSet[accountName].lastBlockNum;
+            const lastSyncBlockHash = allTxInfoSet[accountName].lastBlockHash;
+            if (lastSyncBlockHash == null || lastSyncBlockNum == null) {
+              startSyncBlockNum = 0;
+            } else {
+              startSyncBlockNum = allTxInfoSet[accountName].lastBlockNum + 1;     // 前一次同步到的最后一个区块高度
+            }
             for (const txInfo of allTxInfoSet[accountName].txInfos) {           // 本地提取所有未发送失败的交易，并且同步其状态
-              if (txInfo.txStatus !== TxStatus.SendError) {                     // 同步所有非发送失败的交易的状态
+              //console.log('tx status:' + txInfo.txStatus);
+              if (txInfo.txStatus == null || txInfo.txStatus !== TxStatus.SendError) {                     // 同步所有非发送失败的交易的状态
                 await self.updateTxStatus(txInfo, lastIrreveribleBlockNum, (updatedTxInfo) => {                  
                   accountExistTxs[updatedTxInfo.txHash] = updatedTxInfo; 
+                  //console.log('tx after update:' + JSON.stringify(accountExistTxs));
                 });                      
               } else {
-                accountExistTxs[txInfo.txHash] = txInfo; 
+                accountExistTxs[txInfo.txHash] = txInfo;
+                //console.log('tx no update:' + JSON.stringify(accountExistTxs)); 
               }
             }
           } else {  // 无此账户的历史交易数据，需要从账户创建之区块开始同步其交易
@@ -404,7 +420,7 @@ export default class AccountList extends Component {
           if (startSyncBlockNum < 0) {
             startSyncBlockNum = 0;
           }
-
+          //console.log('accountExistTxs:' + JSON.stringify(accountExistTxs));
           let promiseArr = [];
           let accountTxs = [];
           const step = self.state.maxRollbackBlockNum * 10;
@@ -480,7 +496,7 @@ export default class AccountList extends Component {
         Feedback.toast.error(error.message);
       }
     }
-    setTimeout(() => { this.syncTxFromNode(); }, this.state.syncTxInterval);
+    this.state.syncTxTimeoutId = setTimeout(() => { this.syncTxFromNode(); }, this.state.syncTxInterval);
   }
 
   hasUnExecutedTx = (allTxInfoSet) => {
@@ -501,7 +517,10 @@ export default class AccountList extends Component {
     });
   }
   renderDate = (value) => {
+    var renderTime = new BigNumber(value);
+    renderTime = renderTime.shiftedBy(6 * -1);
 
+    return new Date(renderTime.toNumber()).toLocaleString()
   }
   renderTxStatus = (value, index, record) => {
     let status = '';
@@ -526,18 +545,21 @@ export default class AccountList extends Component {
 
   renderBlockStatus = (value, index, record) => {
     let status = '';
+    const confirmBlockNum = this.state.curBlock.number - record.blockNumber;
     switch(value) {
       case BlockStatus.Rollbacked:
-        status = '已回滚';
-        break;
+        return '已回滚';
       case BlockStatus.Irreversible:
         status = '不可逆';
         break;
       case BlockStatus.Reversible:
         status = '可逆';
-        break;     
+        break;   
+      default:
+        return '';  
     }
-    return status;
+    const defaultTrigger = <Tag type="normal" size="small">{status} +{confirmBlockNum}</Tag>;
+    return <Balloon trigger={defaultTrigger} closable={false}>已确认区块数: {confirmBlockNum}</Balloon>;
   }
 
   renderDetailInfo = (value, index, record) => {
@@ -552,7 +574,9 @@ export default class AccountList extends Component {
     const parseActions = record.actions;
 
     return parseActions.map((item) => {
-      console.log(item.result);
+      if (isEmptyObj(item.result)) {
+        return '';
+      }
       const defaultTrigger = <Tag type="normal" size="small">{item.result}</Tag>;
       return <Balloon trigger={defaultTrigger} closable={false}>{item.result}</Balloon>;
     });
@@ -561,6 +585,9 @@ export default class AccountList extends Component {
   renderGasFee = (value, index, record) => {
     const parseActions = record.actions;
     return parseActions.map((item) => {
+      if (isEmptyObj(item.gasFee)) {
+        return '';
+      }
       const defaultTrigger = <Tag type="normal" size="small">{item.gasFee}</Tag>;
       return <Balloon trigger={defaultTrigger} closable={false}>{item.gasFee}</Balloon>;
     });
@@ -568,16 +595,25 @@ export default class AccountList extends Component {
 
   renderGasAllot = (value, index, record) => {
     const parseActions = record.actions;
+    if (isEmptyObj(parseActions[0].gasAllot)) {
+      return '';
+    }
     return parseActions[0].gasAllot.map((gasAllot) => {
-      const defaultTrigger = <Tag type="normal" size="small">{gasAllot.account}=》{gasAllot.gas}aft</Tag>;
-      return <Balloon trigger={defaultTrigger} closable={false}>{gasAllot.account}=》{gasAllot.gas}aft</Balloon>;
+      let reason = '作为矿工';
+      if (gasAllot.typeId === 0) {
+        reason = '资产的发行者';
+      } else if (gasAllot.typeId === 1) {
+        reason = '合约的发行者';
+      }
+      const defaultTrigger = <Tag type="normal" size="small">{gasAllot.name}{reason}分到 {gasAllot.gas}aft</Tag>;
+      return <Balloon trigger={defaultTrigger} closable={false}>{gasAllot.name}{reason}分到 {gasAllot.gas}aft</Balloon>;
     });
   }
-  showKeys = async (index) => {
-    this.setState({authorListVisible: true, authorList: this.state.accountInfos[index].authors});
+  showAuthors = async (index) => {
+    this.setState({authorListVisible: true, authorList: this.state.accountInfos[index].authors, curAccount: this.state.accountInfos[index]});
   }
-  bindNewKey = async (index) => {
-    this.setState({ bindNewAuthorVisible: true });
+  bindNewAuthor = async (index) => {
+    this.setState({ bindNewAuthorVisible: true, curAccount: this.state.accountInfos[index] });
   }
   renderOperation = (value, index) => {
     return (
@@ -594,22 +630,34 @@ export default class AccountList extends Component {
           查看交易
         </Button>
         <p /><p />
-        <Button type="primary" onClick={this.showKeys.bind(this, index)}>
-          查看绑定的密钥
+        <Button type="primary" onClick={this.showAuthors.bind(this, index)}>
+          查看权限列表
         </Button>
         &nbsp;&nbsp;
-        <Button type="primary" onClick={this.bindNewKey.bind(this, index)}>
-          绑定新密钥
+        <Button type="primary" onClick={this.bindNewAuthor.bind(this, index)}>
+          绑定新权限
         </Button>
       </view>
     );
   };
 
   deleteAuthor = async (index) => {
+    const { threshold, updateAuthorThreshold } = this.state.curAccount;
+    const { Owner, weight } = this.state.authorList[index];
+    const payload = '0x' + encode([threshold, updateAuthorThreshold, [UpdateAuthorType.Delete, [Owner, weight]]]).toString('hex');
+    this.state.txInfo = { actionType: constant.UPDATE_ACCOUNT_AUTHOR,
+      accountName: this.state.curAccount.accountName,
+      toAccountName: this.state.chainConfig.accountName,
+      assetId: 1,
+      value: 0,
+      payload };
 
+    this.setState({ txConfirmVisible: true });
   }
-  updateWeight = async (index) => {
 
+  updateWeight = async (index) => {
+    this.state.curAuthor = this.state.authorList[index];
+    this.setState({ updateWeightVisible: true })
   }
   renderAuthorOperation = (value, index) => {
     return (
@@ -617,7 +665,7 @@ export default class AccountList extends Component {
         <Button type="primary" onClick={this.deleteAuthor.bind(this, index)}>
           删除
         </Button>
-        &nbsp;&nbsp;
+        <p /><p />
         <Button type="primary" onClick={this.updateWeight.bind(this, index)}>
           修改权重
         </Button>
@@ -652,36 +700,53 @@ export default class AccountList extends Component {
     this.state.accountInfos.map(account => this.state.accountNames.push(account.accountName));
     this.setState({ selfCreateAccountVisible: true });
   }
-  onSelfCreateAccountOK = () => {
+  onSelfCreateAccountOK = async () => {
     if (this.state.creator == '') {
       Feedback.toast.error('请选择创建者账号');
       return;
     }
-    if (!this.state.accountReg.test(this.state.selfAccount)) {
+    if (!this.state.accountReg.test(this.state.newAccountName)) {
+      console.log(this.state.newAccountName);
       Feedback.toast.error('账号格式错误');
       return;
     }
-    if (this.state.selfPublicKey == '' && this.state.otherPublicKey == '') {
-      Feedback.toast.error('请选择或输入公钥');
+    const exist = await fractal.account.isAccountExist(this.state.newAccountName);
+    if (exist) {
+      Feedback.toast.error('账号已存在，不可重复创建');
       return;
     }
-    if (this.state.password == '') {
-      Feedback.toast.error('请输入密码');
+
+    if (this.state.selfPublicKey == '' && this.state.otherPublicKey == '') {
+      Feedback.toast.error('请选择或输入公钥');
       return;
     }
     let publicKey = this.state.otherPublicKey;
     if (publicKey == '') {
       publicKey = this.state.selfPublicKey;
     }
-    const rlpData = encode([this.state.selfAccount, this.state.creator, 0, this.state.selfPublicKey]);
+    publicKey = '0x04' + publicKey;
+    if (!ethUtil.isValidPublic(Buffer.from(hex2Bytes(publicKey)), true)) {
+      Feedback.toast.error('无效公钥，请重新输入');
+      return;
+    }
 
-    const params = { accountName: this.state.creator,
-      data: `0x${rlpData.toString('hex')}`,
-      actionType: constant.CREATE_NEW_ACCOUNT,
-      toAccountName: this.state.dposInfo.systemName,
-      password: this.state.password,
-    };
-    //this.props.createAccountBySelf(params);
+    if (this.state.transferAmount == null || this.state.transferAmount == '') {
+      this.state.transferAmount = 0;
+    } else if (!this.state.numberReg.test(this.state.transferAmount)) {
+      Feedback.toast.error('附带转账金额数有误，请重新输入');
+      return;
+    }
+    this.state.curAccount = await fractal.account.getAccountByName(this.state.creator);
+
+    const payload = '0x' + encode([this.state.newAccountName, this.state.creator, 0, publicKey]).toString('hex');
+    this.state.txInfo = { actionType: constant.CREATE_NEW_ACCOUNT,
+      accountName: this.state.curAccount.accountName,
+      toAccountName: this.state.chainConfig.accountName,
+      assetId: this.state.chainConfig.sysTokenID,
+      value: this.state.transferAmount,
+      payload };
+
+    this.setState({ txConfirmVisible: true });
   };
 
   onSelfCreateAccountClose = () => {
@@ -713,7 +778,9 @@ export default class AccountList extends Component {
   handleOthersPublicKeyChange(v) {
     this.state.otherPublicKey = v;
   }
-
+  handleTransferAmountChange(v) {
+    this.state.transferAmount = v;
+  }
   handleImportAccountChange(v) {
     this.state.importAccountName = v;
   }
@@ -731,47 +798,56 @@ export default class AccountList extends Component {
     this.state.gasLimit = v;
   }
 
-  onBindNewAuthorOK = () => {
-    if (this.state.selfPublicKey == '' && this.state.otherPublicKey == '') {
-      Feedback.toast.error('请选择或输入公钥');
+  onBindNewAuthorOK = async () => {
+    const newOwner = this.state.newOwner;
+    if (newOwner == null || (!this.state.accountReg.test(newOwner) && !ethUtil.isValidPublic(Buffer.from(hex2Bytes(newOwner)), true) && !ethUtil.isValidAddress(Buffer.from(hex2Bytes(newOwner))))) {
+      Feedback.toast.error('请输入有效的账号、公钥或地址');
       return;
     }
-    if (this.state.password == '') {
-      Feedback.toast.error('请输入密码');
+    if (newOwner.indexOf('.') > 0 || newOwner.length <= 8) {
+      const exist = await fractal.account.isAccountExist(newOwner);
+      if (!exist) {
+        Feedback.toast.error('账号不存在');
+        return;
+      }
+    }
+    if (this.state.weight == '') {
+      Feedback.toast.error('请输入新的权重');
       return;
     }
-    let publicKey = this.state.otherPublicKey;
-    if (publicKey == '') {
-      publicKey = this.state.selfPublicKey;
-    }
 
-    let founder = this.state.curAccount.founder;
-    if (founder == '') {
-      founder = this.state.curAccount.accountName;
-    }
-
-    const rlpData = encode(['', founder, this.state.curAccount.chargeRatio, publicKey]);
-    const params = {
+    const { threshold, updateAuthorThreshold } = this.state.curAccount;
+    const payload = '0x' + encode([threshold, updateAuthorThreshold, [UpdateAuthorType.Add, [this.state.newOwner, this.state.weight]]]).toString('hex');
+    this.state.txInfo = { actionType: constant.UPDATE_ACCOUNT_AUTHOR,
       accountName: this.state.curAccount.accountName,
-      actionType: constant.UPDATE_ACCOUNT,
-      data: `0x${rlpData.toString('hex')}`,
-      password: this.state.password,
-    };
+      toAccountName: this.state.chainConfig.accountName,
+      assetId: 1,
+      value: 0,
+      payload };
 
-    //this.props.updatePK(params);
+    this.setState({ txConfirmVisible: true });
   }
   onBindNewAuthorClose = () => {
     this.setState({ bindNewAuthorVisible: false });
   }
 
   onUpdateWeightOK = () => {
+    const { threshold, updateAuthorThreshold } = this.state.curAccount;
+    const { Owner } = this.state.curAuthor;
+    const payload = '0x' + encode([threshold, updateAuthorThreshold, [UpdateAuthorType.Update, [Owner, this.state.weight]]]).toString('hex');
+    this.state.txInfo = { actionType: constant.UPDATE_ACCOUNT_AUTHOR,
+      accountName: this.state.curAccount.accountName,
+      toAccountName: this.state.chainConfig.accountName,
+      assetId: 1,
+      value: 0,
+      payload };
 
+    this.setState({ txConfirmVisible: true });
   }
 
   onUpdateWeightClose = () => {
     this.setState({ updateWeightVisible: false });
   }
-
 
   onAssetClose = () => {
     this.setState({
@@ -831,6 +907,191 @@ export default class AccountList extends Component {
       });
     });
   }
+  onTxConfirmOK = () => {
+    if (this.state.gasPrice == '') {
+      Feedback.toast.error('请输入GAS单价');
+      return;
+    }
+    if (!this.state.gasReg.test(this.state.gasPrice)) {
+      Feedback.toast.error('请输入正确GAS单价');
+      return;
+    }
+
+    if (this.state.gasLimit == '') {
+      Feedback.toast.error('请输入愿意支付的最多GAS数量');
+      return;
+    }
+    if (!this.state.gasReg.test(this.state.gasLimit)) {
+      Feedback.toast.error('请输入正确的GAS上限');
+      return;
+    }
+
+    if (this.state.password == '') {
+      Feedback.toast.error('请输入钱包密码');
+      return;
+    }
+
+    const gasValue = new BigNumber(this.state.gasPrice).multipliedBy(this.state.gasLimit).shiftedBy(9);
+    const maxValue = new BigNumber(this.state.curAccountFTBalance);
+    if (gasValue.comparedTo(maxValue) > 0) {
+      Feedback.toast.error('余额不足以支付gas费用');
+      return;
+    }
+
+    const txInfo = this.state.txInfo;
+    txInfo.gasAssetId = this.state.chainConfig.sysTokenID;
+    txInfo.gasPrice = new BigNumber(this.state.gasPrice).shiftedBy(9).toNumber();
+    txInfo.gasLimit = new BigNumber(this.state.gasLimit).toNumber();
+
+    const authors = this.state.curAccount.authors;
+    const threshold = this.state.curAccount.threshold;
+    if (txInfo.actionType === constant.UPDATE_ACCOUNT_AUTHOR) {
+      threshold = this.state.curAccount.updateAuthorThreshold;
+    }
+    const keystores = this.getValidKeystores(authors, threshold);
+    if (keystores.length == 0) {
+      Feedback.toast.error('本地权限不满足交易签名要求！');
+    } else {
+      let index = 0;
+      let multiSigInfos = [];
+      let promiseArr = [];
+      for (const ethersKSInfo of keystores) {
+        promiseArr.push(ethers.Wallet.fromEncryptedJson(JSON.stringify(ethersKSInfo), this.state.password));
+      }
+      Promise.all(promiseArr).then(wallets => {
+        for (const wallet of wallets) {
+          multiSigInfos.push({privateKey: wallet.privateKey, indexes: [index]});
+          index++;
+        }
+        let chainId = 1;
+        const chainIdCookie = cookie.load('chainId');
+        if (chainIdCookie != null && chainIdCookie != '') {
+          chainId = chainIdCookie;
+        }
+
+        fractal.ft.sendMultiSigTransaction(chainId, txInfo, multiSigInfos).then(txHash => {
+          this.processTxSendResult(txInfo, txHash);
+        }).catch(error => {
+          console.log(error);
+          Feedback.toast.error('交易发送失败：' + error);
+          this.addSendErrorTxToFile(txInfo);
+        });
+      }).catch(error => {
+        console.log(error);
+        Feedback.toast.error(error.message);
+      });
+      
+      Feedback.toast.success('开始发送交易');
+    }
+  };
+
+  processTxSendResult = (txInfo, txHash) => {
+    if (txHash != null) {
+      Feedback.toast.success('交易发送成功');
+
+      txInfo.txHash = txHash;
+      this.addSendSuccessTxToFile(txInfo);
+      this.setState({syncTxInterval: 3000, transferVisible: false});
+      clearTimeout(this.state.syncTxTimeoutId);
+      this.state.syncTxTimeoutId = setTimeout(() => { this.syncTxFromNode(); }, this.state.syncTxInterval);
+    } else {
+      Feedback.toast.error('交易发送失败');
+      this.addSendErrorTxToFile(txInfo);
+    }
+  }
+  /** 
+   *  const txInfo = { actionType: constant.TRANSFER,
+        accountName: self.state.curAccount.accountName,
+        toAccountName: self.state.transferToAccount,
+        assetId: self.state.curTransferAsset.assetId,
+        gasLimit: new BigNumber(self.state.gasLimit).toNumber(),
+        gasPrice: new BigNumber(self.state.gasPrice).toNumber(),
+        value: value.toNumber(),
+        payload: '' };
+
+    * {account1:{lastBlockHash, lastBlockNum, txInfos:[{isInnerTx,txStatus,date,txHash,blockHash,blockNumber,blockStatus, actions:[ {type,from,to,assetID,value,payload,status,actionIndex,gasUsed,gasAllot: [ account,gas,typeId],error}],{...}]}}
+    */
+   addSendSuccessTxToFile = (txInfo) => {
+    txInfo.isInnerTx = 0;
+    txInfo.txStatus = TxStatus.NotExecute;
+    txInfo.date = new Date().getTime() * 1000000;
+    txInfo.blockHash = '0x';
+    txInfo.blockNumber = '';
+    txInfo.blockStatus = 2;
+    let action = {};
+    action.type = txInfo.actionType;
+    action.from = txInfo.accountName;
+    action.to = txInfo.toAccoutnName;
+    action.assetID = txInfo.assetId;
+    action.value = txInfo.value;
+    action.payload = txInfo.payload;
+    action.status = 0;
+    action.actionIndex = 0;
+    action.gasUsed = 0;
+    action.gasAllot = [];
+    txInfo.actions = [action];
+
+    let allTxInfoSet = global.localStorage.getItem(constant.TxInfoFile);
+    if (allTxInfoSet != null) {
+      allTxInfoSet = JSON.parse(allTxInfoSet);
+      const accountTxInfoSet = allTxInfoSet[txInfo.accountName];
+      if (accountTxInfoSet == null) {
+        accountTxInfoSet = {};
+        accountTxInfoSet.txInfos = [txInfo];
+        allTxInfoSet[txInfo.accountName] = accountTxInfoSet;
+      } else {
+        accountTxInfoSet.txInfos.push(txInfo);
+      }
+    } else {
+      allTxInfoSet = {};
+      allTxInfoSet[txInfo.accountName] = {};
+      allTxInfoSet[txInfo.accountName].txInfos = [txInfo];
+    }
+    global.localStorage.setItem(constant.TxInfoFile, JSON.stringify(allTxInfoSet));
+  }
+  addSendErrorTxToFile = (txInfo) => {
+    txInfo.isInnerTx = 0;
+    txInfo.txStatus = TxStatus.SendError;
+    txInfo.date = new Date().getTime() * 1000000;
+    txInfo.txHash = '0x';
+    txInfo.blockHash = '0x';
+    txInfo.blockNumber = '';
+    txInfo.blockStatus = 2;
+    let action = {};
+    action.type = txInfo.actionType;
+    action.from = txInfo.accountName;
+    action.to = txInfo.toAccoutnName;
+    action.assetID = txInfo.assetId;
+    action.value = txInfo.value;
+    action.payload = txInfo.payload;
+    action.status = 0;
+    action.actionIndex = 0;
+    action.gasUsed = 0;
+    action.gasAllot = [];
+    txInfo.actions = [action];
+
+    let allTxInfoSet = global.localStorage.getItem(constant.TxInfoFile);
+    if (allTxInfoSet != null) {
+      allTxInfoSet = JSON.parse(allTxInfoSet);
+      const accountTxInfoSet = allTxInfoSet[txInfo.accountName];
+      if (accountTxInfoSet == null) {
+        accountTxInfoSet = {};
+        accountTxInfoSet.txInfos = [txInfo];
+        allTxInfoSet[txInfo.accountName] = accountTxInfoSet;
+      } else {
+        accountTxInfoSet.txInfos.push(txInfo);
+      }
+    } else {
+      allTxInfoSet = {};
+      allTxInfoSet[txInfo.accountName] = {};
+      allTxInfoSet[txInfo.accountName].txInfos = [txInfo];
+    }
+    global.localStorage.setItem(constant.TxInfoFile, JSON.stringify(allTxInfoSet));
+  }
+
+  onTxConfirmClose = () => {
+    this.setState({ txConfirmVisible: false });
+  }
   onTransferOK = () => {
     if (this.state.transferToAccount == '') {
       Feedback.toast.error('请输入账号');
@@ -884,7 +1145,7 @@ export default class AccountList extends Component {
   
       const gasValue = new BigNumber(self.state.gasPrice).multipliedBy(self.state.gasLimit).shiftedBy(9);
       const maxValue = new BigNumber(self.state.curBalance.balance);
-      if (self.state.curTransferAsset.assetId === 1) {
+      if (self.state.curTransferAsset.assetId === self.state.chainConfig.sysTokenID) {
         const valueAddGasFee = value.plus(gasValue);
   
         if (valueAddGasFee.comparedTo(maxValue) > 0) {
@@ -940,16 +1201,11 @@ export default class AccountList extends Component {
           }
 
           fractal.ft.sendMultiSigTransaction(chainId, transferInfo, multiSigInfos).then(txHash => {
-            if (txHash != null) {
-              Feedback.toast.success('交易发送成功');
-              self.setState({syncTxInterval: 3000, transferVisible: false});
-            } else {
-              Feedback.toast.error('交易发送失败');
-            }
-    
+            this.processTxSendResult(transferInfo, txHash);
           }).catch(error => {
             console.log(error);
             Feedback.toast.error('交易发送失败：' + error);
+            this.addSendErrorTxToFile(transferInfo);
           });
         }).catch(error => {
           console.log(error);
@@ -1008,37 +1264,42 @@ export default class AccountList extends Component {
         <IceContainer>
           <Table primaryKey="accountName" dataSource={this.state.accountInfos} hasBorder={false} isLoading={this.state.isLoading}>
             <Table.Column
-              width={110}
+              width={80}
               title="账号"
               dataIndex="accountName"
             />
             <Table.Column
-              width={110}
+              width={80}
               title="创建者"
               dataIndex="founder"
             />
             <Table.Column
               width={100}
-              title="权限阈值"
-              dataIndex="threshold"
+              title="更新权限所需权限阈值"
+              dataIndex="updateAuthorThreshold"
             />
             <Table.Column
               width={100}
-              title="注册区块"
+              title="其它交易所需权限阈值"
+              dataIndex="threshold"
+            />
+            <Table.Column
+              width={80}
+              title="区块高度"
               dataIndex="number"
             />
             <Table.Column
-              width={120}
-              title="是否合约账户"
+              width={80}
+              title="合约账户"
               dataIndex="codeSize"
               cell={this.renderContract.bind(this)}
             />
             <Table.Column
-              width={80}
+              width={70}
               title="手续费比例"
               dataIndex="chargeRatio"
             />
-            <Table.Column title="操作" width={400} cell={this.renderOperation} />
+            <Table.Column title="操作" width={500} cell={this.renderOperation} />
           </Table>
           {/* <div onClick={this.addAccountBySystem.bind(this)} style={styles.addNewItem}>
             + 新增账户(第三方免费帮您创建)
@@ -1113,26 +1374,14 @@ export default class AccountList extends Component {
           <br />
           <br />
           <Input hasClear
-            htmlType="password"
-            onChange={this.handlePasswordChange.bind(this)}
-            style={{ width: 400 }}
-            addonBefore="钱包密码"
-            size="medium"
-            defaultValue=""
-            maxLength={20}
-            hasLimitHint
-          />
-          <br />
-          <br />
-          <Input hasClear
             onChange={this.handleNewAccountNameChange.bind(this)}
             style={{ width: 400 }}
             addonBefore="待创建账号"
             size="medium"
             defaultValue=""
-            maxLength={16}
+            maxLength={25}
             hasLimitHint
-            placeholder="由a-z0-9组成，长度8~16位"
+            placeholder="由a-z0-9.组成，长度8~25位"
           />
           <br />
           <br />
@@ -1163,6 +1412,18 @@ export default class AccountList extends Component {
             hasLimitHint
             disabled={!this.state.inputOtherPK}
             placeholder="若此处填入公钥，创建时将以此公钥为准"
+          />
+          <br />
+          <br />
+          <Input hasClear
+            onChange={this.handleTransferAmountChange.bind(this)}
+            style={{ width: 400 }}
+            addonBefore="附带转账金额(单位:FT)"
+            size="medium"
+            defaultValue=""
+            maxLength={10}
+            hasLimitHint
+            placeholder="创建新账号的同时，可向此账号转账，默认为0"
           />
         </Dialog>
 
@@ -1195,18 +1456,6 @@ export default class AccountList extends Component {
             maxLength={10}
             hasLimitHint
           />
-          <br />
-          <br />
-          <Input hasClear
-            htmlType="password"
-            onChange={this.handlePasswordChange.bind(this)}
-            style={{ width: 400 }}
-            addonBefore="钱包密码"
-            size="medium"
-            defaultValue=""
-            maxLength={20}
-            hasLimitHint
-          />
         </Dialog>
 
         <Dialog
@@ -1220,22 +1469,10 @@ export default class AccountList extends Component {
           <Input hasClear
             onChange={this.handleWeightChange.bind(this)}
             style={{ width: 400 }}
-            addonBefore="权重"
+            addonBefore="新的权重"
             size="medium"
             defaultValue=""
             maxLength={10}
-            hasLimitHint
-          />
-          <br />
-          <br />
-          <Input hasClear
-            htmlType="password"
-            onChange={this.handlePasswordChange.bind(this)}
-            style={{ width: 400 }}
-            addonBefore="钱包密码"
-            size="medium"
-            defaultValue=""
-            maxLength={20}
             hasLimitHint
           />
         </Dialog>
@@ -1275,7 +1512,7 @@ export default class AccountList extends Component {
           <div className="editable-table">
             <IceContainer>
               <Table primaryKey="owner" dataSource={this.state.authorList} hasBorder={false} resizable>
-                <Table.Column title="所有者" dataIndex="owner" width={100} />
+                <Table.Column title="所有者" dataIndex="Owner" width={100} />
                 <Table.Column title="权重" dataIndex="weight" width={100} />
                 <Table.Column title="操作" width={150} cell={this.renderAuthorOperation.bind(this)} />
               </Table>
@@ -1307,7 +1544,7 @@ export default class AccountList extends Component {
         </Dialog>
 
         <Dialog
-          style={{ width: 1000 }}
+          style={{ width: 1200 }}
           visible={this.state.txVisible}
           title="交易信息"
           footerActions="ok"
@@ -1320,18 +1557,18 @@ export default class AccountList extends Component {
           <div className="editable-table">
             <IceContainer>
               <Table primaryKey="date" dataSource={this.state.txInfos} hasBorder={false} resizable>
-                <Table.Column title="时间" dataIndex="date" width={90} cell={this.renderDate.bind(this)} />
-                <Table.Column title="交易Hash" dataIndex="txHash" width={90} />
+                <Table.Column title="时间" dataIndex="date" width={65} cell={this.renderDate.bind(this)} />
+                <Table.Column title="交易Hash" dataIndex="txHash" width={60} />
                 <Table.Column title="交易状态" dataIndex="txStatus" width={50} cell={this.renderTxStatus.bind(this)} />
-                <Table.Column title="区块Hash" dataIndex="blockHash" width={90} />
+                <Table.Column title="区块Hash" dataIndex="blockHash" width={60} />
                 <Table.Column title="区块高度" dataIndex="blockNumber" width={50} />
-                <Table.Column title="区块状态" dataIndex="blockStatus" width={50} cell={this.renderBlockStatus.bind(this)} />
+                <Table.Column title="区块状态" dataIndex="blockStatus" width={100} cell={this.renderBlockStatus.bind(this)} />
 
                 <Table.Column title="类型" dataIndex="parsedActions" width={80} cell={this.renderActionType.bind(this)} />
                 <Table.Column title="详情" dataIndex="parsedActions" width={100} cell={this.renderDetailInfo.bind(this)} />
-                <Table.Column title="结果" dataIndex="parsedActions" width={80} cell={this.renderResult.bind(this)} />
+                {/* <Table.Column title="结果" dataIndex="parsedActions" width={50} cell={this.renderResult.bind(this)} /> */}
                 <Table.Column title="总手续费" dataIndex="parsedActions" width={80} cell={this.renderGasFee.bind(this)} />
-                <Table.Column title="手续费分配详情" dataIndex="parsedActions" width={100} cell={this.renderGasAllot.bind(this)} />
+                <Table.Column title="手续费分配详情" dataIndex="parsedActions" width={150} cell={this.renderGasAllot.bind(this)} />
 
                 {/* <Table.Column title="类型" width={50} dataIndex="actionType" cell={this.actionTypeRender.bind(this)}/>
                 <Table.Column title="详情" width={200} dataIndex="detailInfo"/>
@@ -1404,6 +1641,50 @@ export default class AccountList extends Component {
             maxLength={20}
             hasLimitHint
             onPressEnter={this.onTransferOK.bind(this)}
+          />
+        </Dialog>
+        <Dialog
+          visible={this.state.txConfirmVisible}
+          title="交易确认"
+          footerActions="ok"
+          footerAlign="center"
+          closeable="true"
+          onOk={this.onTxConfirmOK.bind(this)}
+          onCancel={this.onTxConfirmClose.bind(this)}
+          onClose={this.onTxConfirmClose.bind(this)}
+        >
+          <Input hasClear
+            onChange={this.handleGasPriceChange.bind(this)}
+            style={{ width: 400 }}
+            addonBefore="GAS单价"
+            addonAfter="gaft"
+            size="medium"
+            placeholder={`建议值：${this.state.suggestionPrice}`}
+            hasLimitHint
+          />
+          <br />
+          1gaft = 10<sup>-9</sup>ft = 10<sup>9</sup>aft
+          <br />
+          <br />
+          <Input hasClear
+            onChange={this.handleGasLimitChange.bind(this)}
+            style={{ width: 400 }}
+            addonBefore="GAS数量上限"
+            size="medium"
+            hasLimitHint
+          />
+          <br />
+          <br />
+          <Input hasClear
+            htmlType="password"
+            onChange={this.handlePasswordChange.bind(this)}
+            style={{ width: 400 }}
+            addonBefore="钱包密码"
+            size="medium"
+            defaultValue=""
+            maxLength={20}
+            hasLimitHint
+            onPressEnter={this.onTxConfirmOK.bind(this)}
           />
         </Dialog>
       </div>
