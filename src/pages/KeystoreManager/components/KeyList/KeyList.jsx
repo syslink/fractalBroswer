@@ -10,8 +10,10 @@ import EthCrypto from 'eth-crypto';
 import EccCrypto from 'eccrypto';
 import * as ethUtil from 'ethereumjs-util';
 import { dpos, utils } from 'fractal-web3';
+import copy from 'copy-to-clipboard';
+
 import CellEditor from './CellEditor';
-import { hex2Bytes, checkPassword } from '../../../../utils/utils';
+import { hex2Bytes, checkPassword, getPublicKeyWithPrefix } from '../../../../utils/utils';
 import { KeyStoreFile } from '../../../../utils/constant';
 import './KeyList.scss';
 
@@ -109,12 +111,20 @@ export default class KeyList extends Component {
     return <span>{index}</span>;
   };
 
+  copyValue = (value) => {
+    copy(value);
+    Feedback.toast.success('已复制到粘贴板');
+  }
+
   renderPublicKey = (value) => {
-    return '0x' + value;
+    const displayValue = value.substr(0, 8) + '...' + value.substr(value.length - 6);
+    return <address title={'点击可复制'} onClick={ () => this.copyValue(value) }>{displayValue}</address>;
   }
 
   renderAddress = (value) => {
-    return '0x' + value;
+    value = '0x' + value;
+    const displayValue = value.substr(0, 8) + '...' + value.substr(value.length - 6);
+    return <address title={'点击可复制'} onClick={ () => this.copyValue(value) }>{displayValue}</address>;
   }
 
   deleteItem = (index) => {
@@ -351,7 +361,7 @@ export default class KeyList extends Component {
       const ksInfoObj = JSON.parse(ksInfoStr);
       console.log(ksInfoObj);
       const publicKey = EthCrypto.publicKeyByPrivateKey(wallet.privateKey);
-      ksInfoObj['publicKey'] = publicKey;
+      ksInfoObj['publicKey'] = getPublicKeyWithPrefix(publicKey);
 
       if (this.addAccountToKeystoreFile(ksInfoObj, repalceOldOne)) {
         const bip32path = Object.prototype.hasOwnProperty.call(ksInfoObj, 'x-ethers') ? ksInfoObj['x-ethers'].path : NonMnemonicGenerate;
@@ -713,7 +723,7 @@ export default class KeyList extends Component {
               width={120}
               title="公钥"
               dataIndex="publicKey"
-              cell={this.renderPublicKey}
+              cell={this.renderPublicKey.bind(this)}
             />
             <Table.Column
               width={120}

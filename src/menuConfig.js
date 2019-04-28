@@ -60,7 +60,7 @@ const asideMenuConfig = [
     ],
   },
   {
-    name: '区块 & 交易',
+    name: '区块 & 交易(待更新)',
     path: '/list',
     icon: 'search',
     children: [
@@ -75,7 +75,7 @@ const asideMenuConfig = [
     ],
   },
   {
-    name: '资产管理',
+    name: '资产管理(待更新)',
     path: '/portlets',
     icon: 'ul-list',
     children: [
@@ -90,7 +90,7 @@ const asideMenuConfig = [
     ],
   },
   {
-    name: '生产者',
+    name: '生产者(待更新)',
     path: '/portlets',
     icon: 'repair',
     children: [
@@ -101,7 +101,7 @@ const asideMenuConfig = [
     ],
   },
   {
-    name: '开发者',
+    name: '开发者(待更新)',
     path: '/portlets',
     icon: 'code',
     children: [

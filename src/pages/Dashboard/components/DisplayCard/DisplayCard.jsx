@@ -52,16 +52,16 @@ class BlockTxLayout extends Component {
       // console.log(test);
       const p1 = fractal.ft.getCurrentBlock(false);
       const p2 = fractal.dpos.getDposIrreversibleInfo();
-      const p3 = fractal.dpos.getLatestEpchoInfo();
-      const p4 = fractal.dpos.getCadidates();
+      const p3 = fractal.dpos.getValidateCandidates();
+      const p4 = fractal.dpos.getCandidates(false);
       const p5 = fractal.dpos.getDposInfo();
       const self = this;
       Promise.all([p1, p2, p3, p4, p5]).then(result => {
-        const [curBlockInfo, irreversibleInfo, latestEpchoInfo, cadidates, dposInfo] = result;
+        const [curBlockInfo, irreversibleInfo, latestEpchoInfo, candidates, dposInfo] = result;
         const curHeight = curBlockInfo.number;
         eventProxy.trigger('curHeight', curHeight);
 
-        const maxSpan = dposInfo.blockFrequency * dposInfo.cadidateScheduleSize;
+        const maxSpan = dposInfo.blockFrequency * dposInfo.candidateScheduleSize;
         const interval = 1;
 
         if (self.state.txInfos.length > 12) {
@@ -101,8 +101,8 @@ class BlockTxLayout extends Component {
               totalTxNumInOneHour: totalNum,
               maxTPS: Math.round(maxTxNum * 1000 / dposInfo.blockInterval),
               latestEpchoInfo,
-              curProducerList: cadidates,
-              activeProducers: latestEpchoInfo.activatedCadidateSchedule,
+              curProducerList: candidates,
+              activeProducers: latestEpchoInfo.activatedCandidateSchedule,
             });
             
           }).catch(error => {

@@ -21,7 +21,6 @@ export default class Header extends PureComponent {
     super(props);
     let ip = '127.0.0.1';
     let port = 8545;
-    let chainId = 1;
     const nodeInfoCookie = cookie.load('nodeInfo');
 
     if (nodeInfoCookie != null && nodeInfoCookie !== '') {
@@ -30,16 +29,11 @@ export default class Header extends PureComponent {
       port = nodeInfos[1];
     }
 
-    const chainIdCookie = cookie.load('chainId');
-    if (chainIdCookie != null && chainIdCookie !== '') {
-      chainId = chainIdCookie;
-    }
     this.state = {
       nodeConfigVisible: false,
       ip,
       port,
       nodeInfo: 'http://' + ip + ':' + port,
-      chainId,
     };
   }
   openSetDialog = () => {
@@ -50,9 +44,6 @@ export default class Header extends PureComponent {
   }
   handlePortChange = (v) => {
     this.state.port = v;
-  }
-  handleChainIdChange = (v) => {
-    this.state.chainId = v;
   }
   onConfigNodeOK = () => {
     if (this.state.ip === '') {
@@ -65,9 +56,8 @@ export default class Header extends PureComponent {
     }
     const nodeInfo = 'http://' + this.state.ip + ':' + this.state.port;
     cookie.save('nodeInfo', nodeInfo);
-    cookie.save('chainId', this.state.chainId);
     axios.defaults.baseURL = nodeInfo;
-    this.setState({ nodeConfigVisible: false, nodeInfo, chainId: this.state.chainId });
+    this.setState({ nodeConfigVisible: false, nodeInfo });
 
     history.push('/');
   }
@@ -86,7 +76,7 @@ export default class Header extends PureComponent {
           style={{ display: 'flex' }}
         >
           <Balloon trigger={defaultTrigger} closable={false}>
-            当前连接的节点:{this.state.nodeInfo}<br /><br />ChainId:{this.state.chainId}
+            当前连接的节点:{this.state.nodeInfo}
           </Balloon>
           <Dialog
             visible={this.state.nodeConfigVisible}
@@ -115,18 +105,6 @@ export default class Header extends PureComponent {
               addonBefore="RPC端口"
               size="medium"
               defaultValue={this.state.port}
-              maxLength={5}
-              hasLimitHint
-              onPressEnter={this.onConfigNodeOK.bind(this)}
-            />
-            <br />
-            <br />
-            <Input hasClear
-              onChange={this.handleChainIdChange.bind(this)}
-              style={{ width: 400 }}
-              addonBefore="ChainID"
-              size="medium"
-              defaultValue={this.state.chainId}
               maxLength={5}
               hasLimitHint
               onPressEnter={this.onConfigNodeOK.bind(this)}

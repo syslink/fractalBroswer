@@ -30,3 +30,5 @@ export const FT_DECIMALS = 18;
 export const AccountFile = 'accountInfo';
 export const KeyStoreFile = 'keystoreInfo';
 export const TxInfoFile = 'txInfo';
+
+export const PublicKeyPrefix = '0x04';
