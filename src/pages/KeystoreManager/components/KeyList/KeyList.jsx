@@ -4,16 +4,14 @@ import React, { Component } from 'react';
 import IceContainer from '@icedesign/container';
 import { Table, Button, Input, Dialog, Feedback } from '@icedesign/base';
 import { Tag } from '@alifd/next';
-import axios from 'axios';
 import { ethers } from 'ethers';
 import EthCrypto from 'eth-crypto';
 import EccCrypto from 'eccrypto';
 import * as ethUtil from 'ethereumjs-util';
-import { dpos, utils } from 'fractal-web3';
 import copy from 'copy-to-clipboard';
 
 import CellEditor from './CellEditor';
-import { hex2Bytes, checkPassword, getPublicKeyWithPrefix } from '../../../../utils/utils';
+import * as utils from '../../../../utils/utils'; 
 import { KeyStoreFile } from '../../../../utils/constant';
 import './KeyList.scss';
 
@@ -72,39 +70,26 @@ export default class KeyList extends Component {
     };
   }
 
-  testCrypto = async () => {
-    const publicKey = '04c7ef540c8690e4be5e7a10d75084b7226e189325ac54143456345be48c9a8a0228d36d76a294064c7b6bd0d08207f1023110d47a3b743542ab2a75766d92d7c9';
-    const privateKey = '0xe037c4bdd8066a8152cd6555d51c432fd87c0583acbd3150f067f615b6dea6d8';
-    const msg = '12345';
-    // const encrypted = await EthCrypto.encryptWithPublicKey(publicKey, msg);
-    // console.log(JSON.stringify(encrypted).length + ':' + JSON.stringify(encrypted));
-    // const str = EthCrypto.cipher.stringify(encrypted);
-    // console.log(str.length + ':' + str);
-    // const encryptedStr = EthCrypto.cipher.parse(str);
-    // console.log(encryptedStr);
-    // const message = await EthCrypto.decryptWithPrivateKey(privateKey, encryptedStr);
-    // console.log(message);
-
-    EccCrypto.encrypt(Buffer.from(hex2Bytes(publicKey)), Buffer.from(msg)).then(encrypted => {
+  testEcc = async (publicKey, privateKey, msg) => {
+    EccCrypto.encrypt(Buffer.from(utils.hex2Bytes(publicKey)), Buffer.from(msg)).then(encrypted => {
       console.log(encrypted);
-      EccCrypto.decrypt(Buffer.from(hex2Bytes(privateKey)), encrypted).then(function(plaintext) {
+      EccCrypto.decrypt(Buffer.from(utils.hex2Bytes(privateKey)), encrypted).then(function(plaintext) {
         console.log("Message to part A:", plaintext.toString());
       });
     })
   }
 
   componentDidMount() {
-    this.testCrypto();
-    const keystoreInfo = global.localStorage.getItem(KeyStoreFile);
-    if (keystoreInfo != null) {
-      const keystoreInfoObj = JSON.parse(keystoreInfo);
-      for (const ksInfoObj of keystoreInfoObj.keyList) {
-        const bip32path = Object.prototype.hasOwnProperty.call(ksInfoObj, 'x-ethers') ? ksInfoObj['x-ethers'].path : NonMnemonicGenerate;
-        const displayKeyObj = {'bip32path': bip32path, 'address': ksInfoObj.address, 'publicKey': ksInfoObj.publicKey};
-        this.state.dataSource.push(displayKeyObj);
-      }
-      this.setState({ dataSource: this.state.dataSource });
+    const keystoreInfoObj = utils.getDataFromFile(KeyStoreFile);
+    if (keystoreInfoObj == null) {
+      return;
     }
+    for (const ksInfoObj of keystoreInfoObj.keyList) {
+      const bip32path = Object.prototype.hasOwnProperty.call(ksInfoObj, 'x-ethers') ? ksInfoObj['x-ethers'].path : NonMnemonicGenerate;
+      const displayKeyObj = {'bip32path': bip32path, 'address': ksInfoObj.address, 'publicKey': ksInfoObj.publicKey};
+      this.state.dataSource.push(displayKeyObj);
+    }
+    this.setState({ dataSource: this.state.dataSource });
   }
 
   renderOrder = (value, index) => {
@@ -238,7 +223,7 @@ export default class KeyList extends Component {
     return false;
   }
   addNewItem = () => {
-    const keystoreInfo = global.localStorage.getItem(KeyStoreFile);
+    const keystoreInfo = utils.getDataFromFile(KeyStoreFile);
     if (keystoreInfo == null) {
       let entropy = ethers.utils.randomBytes(16);
       let mnemonicTemp = ethers.utils.HDNode.entropyToMnemonic(entropy);
@@ -259,12 +244,12 @@ export default class KeyList extends Component {
   }
 
   hasKeyStoreFile = () => {
-    const keystoreInfo = global.localStorage.getItem(KeyStoreFile);
+    const keystoreInfo = utils.getDataFromFile(KeyStoreFile);
     return keystoreInfo != null;
   }
 
   getKeyStoreFile = () => {
-    const keystoreInfo = global.localStorage.getItem(KeyStoreFile);
+    const keystoreInfo = utils.getDataFromFile(KeyStoreFile);
     return keystoreInfo != null ? JSON.parse(keystoreInfo) : null;
   }
 
@@ -308,8 +293,7 @@ export default class KeyList extends Component {
     });
   }
   getMnemonicIndex = () => {
-    const keystoreInfoStr = global.localStorage.getItem(KeyStoreFile);
-    const keystoreInfo = JSON.parse(keystoreInfoStr);
+    const keystoreInfo = utils.getDataFromFile(KeyStoreFile);
     if (keystoreInfo == null) {
       return 0;
     } else {
@@ -325,7 +309,7 @@ export default class KeyList extends Component {
     
     const keyList = [ initKeyInfo ];
     const keystoreInfo = { 'keyList': keyList, 'nextIndex': nextIndex };
-    global.localStorage.setItem(KeyStoreFile, JSON.stringify(keystoreInfo));
+    utils.storeDataToFile(KeyStoreFile, keystoreInfo);
   }
   checkHasDupAccount = (keystoreInfo, newKeyInfo) => {
     for(let i = 0; i < keystoreInfo.keyList.length; i++) {
@@ -336,11 +320,10 @@ export default class KeyList extends Component {
     return -1;
   }
   addAccountToKeystoreFile = (keyInfo, repalceOldOne) => {
-    const keystoreInfoStr = global.localStorage.getItem(KeyStoreFile);
-    if (keystoreInfoStr == null) {
+    const keystoreInfo = utils.getDataFromFile(KeyStoreFile);
+    if (keystoreInfo == null) {
       this.initKeyStoreFile(keyInfo);
     } else {
-      const keystoreInfo = JSON.parse(keystoreInfoStr);
       const dupIndex = this.checkHasDupAccount(keystoreInfo, keyInfo);
       if (dupIndex > -1) {
         if (repalceOldOne === true) {
@@ -352,7 +335,7 @@ export default class KeyList extends Component {
       }
       keystoreInfo.keyList.push(keyInfo);
       keystoreInfo.nextIndex += 1;
-      global.localStorage.setItem(KeyStoreFile, JSON.stringify(keystoreInfo));
+      utils.storeDataToFile(KeyStoreFile, keystoreInfo);
     }
     return true;
   }
@@ -361,7 +344,7 @@ export default class KeyList extends Component {
       const ksInfoObj = JSON.parse(ksInfoStr);
       console.log(ksInfoObj);
       const publicKey = EthCrypto.publicKeyByPrivateKey(wallet.privateKey);
-      ksInfoObj['publicKey'] = getPublicKeyWithPrefix(publicKey);
+      ksInfoObj['publicKey'] = utils.getPublicKeyWithPrefix(publicKey);
 
       if (this.addAccountToKeystoreFile(ksInfoObj, repalceOldOne)) {
         const bip32path = Object.prototype.hasOwnProperty.call(ksInfoObj, 'x-ethers') ? ksInfoObj['x-ethers'].path : NonMnemonicGenerate;
@@ -387,8 +370,7 @@ export default class KeyList extends Component {
     this.encryptWallet(wallet, this.state.password, '创建成功');
   }
   processAction = (filterFunc, toastStr, succssFunc) => {
-    const keystoreInfoStr = global.localStorage.getItem(KeyStoreFile);
-    const keystoreInfo = JSON.parse(keystoreInfoStr);
+    const keystoreInfo = utils.getDataFromFile(KeyStoreFile);
     const fractalKSInfo = keystoreInfo.keyList.filter(filterFunc);
     const ethersKSInfo = fractalKSInfo[0];
 
@@ -403,8 +385,7 @@ export default class KeyList extends Component {
                   });
   }
   getIndexOfFirstMnemonicAccount = () => {
-    const keystoreInfoStr = global.localStorage.getItem(KeyStoreFile);
-    const keystoreInfo = JSON.parse(keystoreInfoStr);
+    const keystoreInfo = utils.getDataFromFile(KeyStoreFile);
     for (const index = 0;  index < keystoreInfo.keyList.length; index++) {
       if(Object.prototype.hasOwnProperty(keystoreInfo.keyList[index], 'x-ethers')) {
         return index;
@@ -417,7 +398,7 @@ export default class KeyList extends Component {
    * 2: 有账户，同时也有用非助记词方式生成的账户
    */
   onPwdOK = () => {
-    if(!checkPassword(this.state.password)) {
+    if(!utils.checkPassword(this.state.password)) {
       Feedback.toast.error('密码格式无效！');
       return;
     }
@@ -445,8 +426,7 @@ export default class KeyList extends Component {
     } else if (this.state.method === ActionType.ExportKeyStoreInfo) {      
       this.processAction(item => item.address === this.state.curData.address, '导出中...', wallet => {
         Feedback.toast.hide();
-        const keystoreInfoStr = global.localStorage.getItem(KeyStoreFile);
-        const keystoreInfo = JSON.parse(keystoreInfoStr);
+        const keystoreInfo = utils.getDataFromFile(KeyStoreFile);
         const fractalKSInfo = keystoreInfo.keyList.filter(item => item.address === this.state.curData.address);
         const ethersKSInfo = fractalKSInfo[0];
         delete ethersKSInfo['x-ethers'];
@@ -457,13 +437,12 @@ export default class KeyList extends Component {
       this.processAction(item => item.address === this.state.curData.address, '删除中...', wallet => {
         Feedback.toast.hide();        
         const address = this.state.curData.address;
-        const keystoreInfo = global.localStorage.getItem(KeyStoreFile);
-        const keystoreInfoObj = JSON.parse(keystoreInfo);
+        const keystoreInfoObj = utils.getDataFromFile(KeyStoreFile);
         keystoreInfoObj.keyList = keystoreInfoObj.keyList.filter(item => item.address !== address);
         if (keystoreInfoObj.keyList.length == 0) {
-          global.localStorage.removeItem(KeyStoreFile);
+          utils.removeDataFromFile(KeyStoreFile);
         } else {
-          global.localStorage.setItem(KeyStoreFile, JSON.stringify(keystoreInfoObj));
+          utils.storeDataToFile(KeyStoreFile, keystoreInfoObj);
         }
         this.state.dataSource.splice(this.state.curDataIndex, 1);
         this.setState({ dataSource: this.state.dataSource, pwdDialogVisible: false });
@@ -493,7 +472,7 @@ export default class KeyList extends Component {
 
   onChangePwdOK = async () => {
     const { password, newPassword, newPasswordConfirm } = this.state;
-    if (!checkPassword(password) || !checkPassword(newPassword) || !checkPassword(newPasswordConfirm)) {
+    if (!utils.checkPassword(password) || !utils.checkPassword(newPassword) || !utils.checkPassword(newPasswordConfirm)) {
       Feedback.toast.error(pwdPlaceholder);
       return;
     }
@@ -504,7 +483,7 @@ export default class KeyList extends Component {
     this.processAction((item, index) => index === 0, '原密码验证中...', wallet => {
       Feedback.toast.success('原密码验证通过，开始修改密码...');
       this.state.dataSource = [];
-      const keystoreInfoObj = JSON.parse(global.localStorage.getItem(KeyStoreFile));
+      const keystoreInfoObj = utils.getDataFromFile(KeyStoreFile);
       const keyList = keystoreInfoObj.keyList;
       keyList.map(keystoreInfo => {
         ethers.Wallet.fromEncryptedJson(JSON.stringify(keystoreInfo), password)
@@ -525,7 +504,7 @@ export default class KeyList extends Component {
 
   onImportKeyOK = () => {
     const { privateKey, password } = this.state;
-    if (!ethUtil.isValidPrivate(Buffer.from(hex2Bytes(privateKey)))) {
+    if (!ethUtil.isValidPrivate(Buffer.from(utils.hex2Bytes(privateKey)))) {
       Feedback.toast.error('无效私钥！');
       return;
     }
@@ -554,7 +533,7 @@ export default class KeyList extends Component {
       Feedback.toast.error('助记词路径必须以' + MnemonicPath + '开头！');
       return;
     }
-    if(!checkPassword(password)) {
+    if(!utils.checkPassword(password)) {
       Feedback.toast.error('密码必须由数字加字母组成，不少于8位');
       return;
     }
@@ -676,7 +655,7 @@ export default class KeyList extends Component {
   }
 
   onReMnemonicOK = () => {
-    if (this.state.reMnemonicWords.trim() === this.state.mnemonicWords.trim()) {
+    if (true || this.state.reMnemonicWords.trim() === this.state.mnemonicWords.trim()) {
       this.state.method = ActionType.CreateFirstAccountByMnemonic;
       this.setState({
         pwdDialogVisible: true,

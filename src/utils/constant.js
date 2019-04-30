@@ -32,3 +32,4 @@ export const KeyStoreFile = 'keystoreInfo';
 export const TxInfoFile = 'txInfo';
 
 export const PublicKeyPrefix = '0x04';
+export const ChainIdPrefix = 'ChainId-';

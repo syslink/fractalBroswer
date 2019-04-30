@@ -4,6 +4,7 @@ import pathToRegexp from 'path-to-regexp';
 import BigNumber from 'bignumber.js';
 import EthCrypto from 'eth-crypto';
 import * as Constant from './constant';
+import * as fractal from 'fractal-web3';
 /**
  * 格式化菜单数据结构，如果子菜单有权限配置，则子菜单权限优先于父级菜单的配置
  * 如果子菜单没有配置，则继承自父级菜单的配置
@@ -294,6 +295,43 @@ function utf8ByteToUnicodeStr(utf8Bytes){
   }
   return unicodeStr;
 }
+
+function getDataFromFile(fileName, chainId) {
+  if (chainId == null) {
+    chainId = fractal.ft.getChainId();
+  }
+  const data = global.localStorage.getItem(fileName);
+  if (data != null) {
+    const dataObj = JSON.parse(data);
+    return dataObj[Constant.ChainIdPrefix + chainId];
+  }
+  return null;
+}
+
+function storeDataToFile(fileName, toSaveObj, chainId) {
+  if (chainId == null) {
+    chainId = fractal.ft.getChainId();
+  }
+  let dataObj = {};
+  const data = global.localStorage.getItem(fileName);
+  if (data != null) {
+    dataObj = JSON.parse(data);
+  }
+  dataObj[Constant.ChainIdPrefix + chainId] = toSaveObj;
+  global.localStorage.setItem(fileName, JSON.stringify(dataObj));
+}
+
+function removeDataFromFile(fileName) {
+  const chainId = fractal.ft.getChainId();
+  let dataObj = {};
+  const data = global.localStorage.getItem(fileName);
+  if (data != null) {
+    dataObj = JSON.parse(data);
+  }
+  delete dataObj[Constant.ChainIdPrefix + chainId];
+  global.localStorage.setItem(fileName, JSON.stringify(dataObj));
+}
+
 export { getFlatMenuData, getRouterData, formatterMenuData, hex2Bytes, bytes2Hex, str2Bytes, 
          saveTxHash, saveTxBothFromAndTo, bytes2Number, deepClone, parsePrivateKey, checkPassword, 
-         isEmptyObj, getPublicKeyWithPrefix, utf8ByteToUnicodeStr };
+         isEmptyObj, getPublicKeyWithPrefix, utf8ByteToUnicodeStr, getDataFromFile, storeDataToFile, removeDataFromFile };

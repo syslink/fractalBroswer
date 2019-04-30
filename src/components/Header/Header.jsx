@@ -11,6 +11,7 @@ import axios from 'axios';
 import { createHashHistory } from 'history';
 import cx from 'classnames';
 import { Link } from 'react-router-dom';
+import * as fractal from 'fractal-web3'
 import { headerMenuConfig } from '../../menuConfig';
 import Logo from '../Logo';
 
@@ -58,7 +59,7 @@ export default class Header extends PureComponent {
     cookie.save('nodeInfo', nodeInfo);
     axios.defaults.baseURL = nodeInfo;
     this.setState({ nodeConfigVisible: false, nodeInfo });
-
+    fractal.utils.setProvider(nodeInfo);
     history.push('/');
   }
   render() {
