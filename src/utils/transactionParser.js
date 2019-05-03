@@ -108,18 +108,18 @@ function parseAction(actionInfo, assetInfo, allAssetInfos, dposInfo) {
       break;
     case actionTypes.CREATE_NEW_ACCOUNT:
       actionParseInfo.actionType = '创建账户';
-      if (payloadInfo.length >= 5) {
+      if (payloadInfo.length >= 4) {
         const newAccount = String.fromCharCode.apply(null, payloadInfo[0]);
         const founder = String.fromCharCode.apply(null, payloadInfo[1]);
-        const chargeRatio = payloadInfo[2].length === 0 ? 0 : payloadInfo[2][0];
-        const publicKey = bytes2Hex(payloadInfo[3]);
-        const detail = utf8ByteToUnicodeStr(payloadInfo[4]);
-        actionParseInfo.detailInfo = `新账号:${newAccount}, 创建者:${founder}, 手续费收取比例:${chargeRatio}%, 公钥:${publicKey}, 描述:${detail}`;
-        actionParseInfo.detailObj = { newAccount, founder, chargeRatio, publicKey };
+        //const chargeRatio = payloadInfo[2].length === 0 ? 0 : payloadInfo[2][0];
+        const publicKey = bytes2Hex(payloadInfo[2]);
+        const accountDesc = utf8ByteToUnicodeStr(payloadInfo[3]);
+        actionParseInfo.detailInfo = `新账号:${newAccount}, 创建者:${founder}, 公钥:${publicKey}, 描述:${accountDesc}`;
+        actionParseInfo.detailObj = { newAccount, founder, publicKey, accountDesc };
       } else {
         actionParseInfo.detailInfo = '未知错误';
       }
-      actionParseInfo.detailObj = { from: actionInfo.from, to: actionInfo.to, value: readableNum, symbol: assetInfo != null ? assetInfo.symbol : '' };
+      //actionParseInfo.detailObj = { from: actionInfo.from, to: actionInfo.to, value: readableNum, symbol: assetInfo != null ? assetInfo.symbol : '' };
       break;
     case actionTypes.UPDATE_ACCOUNT:
       actionParseInfo.actionType = '更新账户';
@@ -305,7 +305,7 @@ function parseAction(actionInfo, assetInfo, allAssetInfos, dposInfo) {
       console.log('error action type:' + actionInfo.type);
   }
   if (actionInfo.value > 0 && actionInfo.type !== actionTypes.TRANSFER) {
-    actionParseInfo.detailInfo += ',创建者向新账号转账' + readableNum + assetInfo.symbol;
+    actionParseInfo.detailInfo += ',新账号收到转账:' + readableNum + assetInfo.symbol;
   }
   return actionParseInfo;
 }

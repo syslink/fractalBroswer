@@ -877,7 +877,7 @@ export default class AccountList extends Component {
     }
     this.state.curAccount = await fractal.account.getAccountByName(this.state.creator);
 
-    const payload = '0x' + encode([this.state.newAccountName, this.state.creator, 0, publicKey, accountDetail]).toString('hex');
+    const payload = '0x' + encode([this.state.newAccountName, this.state.creator, publicKey, accountDetail]).toString('hex');
     this.state.txInfo = { actionType: constant.CREATE_NEW_ACCOUNT,
       accountName: this.state.curAccount.accountName,
       toAccountName: this.state.chainConfig.accountName,  // fractal.account
