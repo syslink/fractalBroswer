@@ -39,6 +39,7 @@ export default class ProducerList extends Component {
           };
         },
       },
+      chainConfig: {},
       accounts: [],
       producerList: [],
       myVoteInfoSet: {},
@@ -71,6 +72,7 @@ export default class ProducerList extends Component {
   }
 
   componentDidMount = async () => {
+    this.state.chainConfig = await fractal.ft.getChainConfig();
     const myVoterAccounts = [];
     const myProducers = [];
     const otherAccounts = [];
@@ -219,7 +221,7 @@ export default class ProducerList extends Component {
     params.password = this.state.password;
 
     const producerName = this.state.rowSelection.selectedRowKeys[0];
-    stake = new BigNumber(stake * this.state.dposInfo.unitStake).shiftedBy(ACTION.FT_DECIMALS).toNumber();
+    stake = new BigNumber(stake * this.state.dposInfo.unitStake).shiftedBy(this.state.chainConfig.sysTokenDecimal).toNumber();
     const rlpData = encode([producerName, stake]);
     params.data = '0x' + rlpData.toString('hex');
 
@@ -265,8 +267,8 @@ export default class ProducerList extends Component {
     let accountMaxStake = 0;
     const unitStake = new BigNumber(this.state.dposInfo.unitStake);
     for (const balance of option.originValue.balances) {
-      if (balance.assetID === ACTION.FT_ASSET_ID) {
-        accountMaxStake = new BigNumber(balance.balance).shiftedBy(ACTION.FT_DECIMALS * -1).dividedBy(unitStake).toFixed(0);
+      if (balance.assetID === this.state.chainConfig.sysTokenID) {
+        accountMaxStake = new BigNumber(balance.balance).shiftedBy(this.state.chainConfig.sysTokenDecimal * -1).dividedBy(unitStake).toFixed(0);
         break;
       }
     }
@@ -482,8 +484,8 @@ export default class ProducerList extends Component {
     let accountMaxStake = 0;
     const unitStake = new BigNumber(this.state.dposInfo.unitStake);
     for (const balance of option.balances) {
-      if (balance.assetID === ACTION.FT_ASSET_ID) {
-        accountMaxStake = new BigNumber(balance.balance).shiftedBy(ACTION.FT_DECIMALS * -1).dividedBy(unitStake).toFixed(0);
+      if (balance.assetID === this.state.chainConfig.sysTokenID) {
+        accountMaxStake = new BigNumber(balance.balance).shiftedBy(this.state.chainConfig.sysTokenDecimal * -1).dividedBy(unitStake).toFixed(0);
         break;
       }
     }
@@ -517,7 +519,7 @@ export default class ProducerList extends Component {
     params.accountName = this.state.producer.accountName;
     params.password = this.state.password;
 
-    stake = new BigNumber(stake * this.state.dposInfo.unitStake).shiftedBy(ACTION.FT_DECIMALS).toNumber();
+    stake = new BigNumber(stake * this.state.dposInfo.unitStake).shiftedBy(this.state.chainConfig.sysTokenDecimal).toNumber();
     const rlpData = encode([this.state.url, stake]);
     params.data = '0x' + rlpData.toString('hex');
 
@@ -581,7 +583,7 @@ export default class ProducerList extends Component {
     params.accountName = this.state.producer.accountName;
     params.password = this.state.password;
 
-    stake = new BigNumber(stake * this.state.dposInfo.unitStake).shiftedBy(ACTION.FT_DECIMALS).toNumber();
+    stake = new BigNumber(stake * this.state.dposInfo.unitStake).shiftedBy(this.state.chainConfig.sysTokenDecimal).toNumber();
     const rlpData = encode([this.state.url, stake]);
     params.data = '0x' + rlpData.toString('hex');
 

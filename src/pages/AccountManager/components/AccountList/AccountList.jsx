@@ -91,6 +91,7 @@ export default class AccountList extends Component {
       transferVisible: false,
       txConfirmVisible: false,
       innerTxVisible: false,
+      withdrawTxFeeVisible: false,
       accountInfos: [],
       authorList: [],
       accountNames: [],
@@ -100,6 +101,12 @@ export default class AccountList extends Component {
       syncTxInterval: 60000,
       syncTxTimeoutId: 0,
       innerTxInfos: [],
+      txFeeTypes: [{value:0, label:'资产'}, {value:1, label:'合约'}, {value:2, label:'挖矿'}],
+      withdrawFooter: (<view>
+                        <Button type='primary' onClick={() => {this.onWithdrawTxFeeOK.bind(this)}}>提取</Button>
+                        <Button type='normal' onClick={this.getTxFee.bind(this)}>查询</Button>
+                       </view>),
+      txFeeInfo: '',
     };
   }
 
@@ -720,11 +727,14 @@ export default class AccountList extends Component {
       return <Balloon trigger={defaultTrigger} closable={false}>{gasAllot.name}{reason}分到 {gasAllot.gas}aft</Balloon>;
     });
   }
-  showAuthors = async (index) => {
+  showAuthors = (index) => {
     this.setState({authorListVisible: true, authorList: this.state.accountInfos[index].authors, curAccount: this.state.accountInfos[index]});
   }
-  bindNewAuthor = async (index) => {
+  bindNewAuthor = (index) => {
     this.setState({ bindNewAuthorVisible: true, curAccount: this.state.accountInfos[index] });
+  }
+  withdrawTxFee = (index) => {
+    this.setState({ withdrawTxFeeVisible: true, curAccount: this.state.accountInfos[index] });
   }
   renderOperation = (value, index) => {
     return (
@@ -734,19 +744,23 @@ export default class AccountList extends Component {
         </Button>
         &nbsp;&nbsp;
         <Button type="primary" onClick={this.showAssets.bind(this, index)}>
-          查看资产/转账
+          资产/转账
         </Button>
         &nbsp;&nbsp;
         <Button type="primary" onClick={this.showTxs.bind(this, index)}>
-          查看交易
+          交易列表
         </Button>
         <p /><p />
         <Button type="primary" onClick={this.showAuthors.bind(this, index)}>
-          查看权限列表
+          权限列表
         </Button>
         &nbsp;&nbsp;
         <Button type="primary" onClick={this.bindNewAuthor.bind(this, index)}>
           绑定新权限
+        </Button>
+        &nbsp;&nbsp;
+        <Button type="primary" onClick={this.withdrawTxFee.bind(this, index)}>
+          手续费
         </Button>
       </view>
     );
@@ -995,7 +1009,25 @@ export default class AccountList extends Component {
   onUpdateWeightClose = () => {
     this.setState({ updateWeightVisible: false });
   }
-
+  onWithdrawTxFeeOK = () => {
+    
+  }
+  onWithdrawTxFeeClose = () => {
+    this.setState({ withdrawTxFeeVisible: false });
+  }
+  getTxFee = async () => {
+    const txFeeInfoObj = await fractal.fee.getObjectFeeByName(this.state.curAccount.accountName, this.state.txFeeType);
+    //console.log(txFeeInfo);
+    if (txFeeInfoObj == null) {
+      Feedback.toast.prompt('无手续费信息');
+    } else {
+      const txFeeDetail = await this.getValue(this.state.chainConfig.sysTokenID, txFeeInfoObj.assetFees[0].remainFee);
+      this.setState({ txFeeInfo : '当前可提取手续费:' + txFeeDetail });
+    }
+  }
+  onChangeTxFeeTypeAccount = (value) => {
+    this.state.txFeeType = value;
+  }
   onAssetClose = () => {
     this.setState({
       assetVisible: false,
@@ -1443,11 +1475,6 @@ export default class AccountList extends Component {
               dataIndex="codeSize"
               cell={this.renderContract.bind(this)}
             />
-            <Table.Column
-              width={70}
-              title="手续费比例"
-              dataIndex="chargeRatio"
-            />
             <Table.Column title="操作" width={500} cell={this.renderOperation} />
           </Table>
           {/* <div onClick={this.addAccountBySystem.bind(this)} style={styles.addNewItem}>
@@ -1488,7 +1515,7 @@ export default class AccountList extends Component {
           >
             {
             this.props.keystoreList.map((keystore) => (
-              <Select.Option value={keystore.publicKey} lable={keystore.publicKey}>
+              <Select.Option value={keystore.publicKey} label={keystore.publicKey}>
                 {keystore.publicKey}
               </Select.Option>
             ))
@@ -1542,7 +1569,7 @@ export default class AccountList extends Component {
           >
             {
             [...this.state.keystoreList, { publicKey: this.state.inputOtherPKStr }].map((keystore) => (
-              <Select.Option value={keystore.publicKey} lable={keystore.publicKey}>
+              <Select.Option value={keystore.publicKey} label={keystore.publicKey}>
                 {keystore.publicKey}
               </Select.Option>
             ))
@@ -1577,6 +1604,7 @@ export default class AccountList extends Component {
           <br />
           <Input hasClear
             onChange={this.handleTransferAmountChange.bind(this)}
+            onPressEnter={this.onSelfCreateAccountOK.bind(this)}
             style={{ width: 400 }}
             addonBefore="附带转账金额(单位:FT)"
             size="medium"
@@ -1631,7 +1659,24 @@ export default class AccountList extends Component {
             inputWidth={"350px"} 
           />
         </Dialog>
-
+        <Dialog
+          visible={this.state.withdrawTxFeeVisible}
+          onOk={this.onWithdrawTxFeeOK.bind(this)}
+          onCancel={this.onWithdrawTxFeeClose.bind(this)}
+          onClose={this.onWithdrawTxFeeClose.bind(this)}
+          title="提取手续费"
+          footerAlign="center"
+          footer={this.state.withdrawFooter}
+        >
+          <Select
+            style={{ width: 400 }}
+            placeholder="选择手续费类型"
+            onChange={this.onChangeTxFeeTypeAccount.bind(this)}
+            dataSource={this.state.txFeeTypes}
+          />
+          <p />
+          {this.state.txFeeInfo}
+        </Dialog>
         <Dialog
           visible={this.state.importAccountVisible}
           title="导入账户"

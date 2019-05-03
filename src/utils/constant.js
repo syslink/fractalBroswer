@@ -24,6 +24,8 @@ export const UNVOTE_CADIDATE = 774;
 export const KICKED_CADIDATE = 773;
 export const EXIT_TAKEOVER = 774;
 
+export const WITHDRAW_TX_FEE = 1280;
+
 export const FT_ASSET_ID = 1;
 export const FT_DECIMALS = 18;
 
